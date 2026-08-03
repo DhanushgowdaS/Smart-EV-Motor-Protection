@@ -1,10 +1,10 @@
-# 🚗 Smart EV Motor Temperature & Overload Protection System
+#  Smart EV Motor Temperature & Overload Protection System
 
 An ESP32-based intelligent EV motor protection system designed to monitor motor temperature, motor current, overload conditions, cooling system, and obstacle detection in real time. The system automatically protects the motor from overheating and overload while providing a professional dashboard for live monitoring.
 
 ---
 
-# 📖 Project Overview
+#  Project Overview
 
 Electric vehicle motors are subjected to varying loads during operation. High mechanical load increases motor current, which causes the motor windings to heat up. Continuous overheating may damage the motor and reduce its lifespan.
 
@@ -16,7 +16,7 @@ The complete system can be monitored through an OLED display as well as a modern
 
 ---
 
-# 🎯 Objectives
+#  Objectives
 
 - Monitor motor temperature continuously.
 - Detect motor overload using current sensing.
@@ -31,35 +31,35 @@ The complete system can be monitored through an OLED display as well as a modern
 
 ---
 
-# ⚙️ Features
+#  Features
 
-✅ Real-time Motor Temperature Monitoring
+ Real-time Motor Temperature Monitoring
 
-✅ Real-time Motor Current Monitoring
+ Real-time Motor Current Monitoring
 
-✅ Automatic Cooling Fan Control
+ Automatic Cooling Fan Control
 
-✅ Multi-Level Protection System
+ Multi-Level Protection System
 
-✅ Emergency Motor Shutdown
+ Emergency Motor Shutdown
 
-✅ OLED Live Display
+ OLED Live Display
 
-✅ ESP32 Web Dashboard
+ ESP32 Web Dashboard
 
-✅ Obstacle Detection
+ Obstacle Detection
 
-✅ Automatic Speed Reduction
+ Automatic Speed Reduction
 
-✅ Battery Voltage Monitoring
+ Battery Voltage Monitoring
 
-✅ Warning Buzzer
+ Warning Buzzer
 
-✅ Visual Status Indicators
+ Visual Status Indicators
 
 ---
 
-# 🛠 Hardware Components
+#  Hardware Components
 
 - ESP32 DevKit V1
 - DC Geared Motor
@@ -68,7 +68,7 @@ The complete system can be monitored through an OLED display as well as a modern
 - DS18B20 Temperature Sensor
 - 12V Cooling Fan
 - MOSFET Module
-- 0.96" OLED Display
+- 1.3" OLED Display
 - Active Buzzer
 - LEDs
 - Push Buttons
@@ -79,7 +79,7 @@ The complete system can be monitored through an OLED display as well as a modern
 
 ---
 
-# 🖥 Dashboard Parameters
+#  Dashboard Parameters
 
 The web dashboard displays:
 
@@ -95,7 +95,7 @@ The web dashboard displays:
 
 ---
 
-# 🛡 Protection Levels
+# Protection Levels
 
 | Level | Condition | Action |
 |--------|-----------|--------|
@@ -107,7 +107,7 @@ The web dashboard displays:
 
 ---
 
-# 🚧 Obstacle Detection
+#  Obstacle Detection
 
 Three ultrasonic sensors are used.
 
@@ -125,7 +125,7 @@ If an obstacle is detected:
 
 ---
 
-# 📊 System Workflow
+#  System Workflow
 
 ```
 Power ON
@@ -152,7 +152,7 @@ Run / Cool / Warn / Stop
 
 ---
 
-# 📁 Project Structure
+#  Project Structure
 
 ```
 Smart-EV-Motor-Protection/
@@ -167,7 +167,7 @@ Smart-EV-Motor-Protection/
 
 ---
 
-# 🔮 Future Enhancements
+#  Future Enhancements
 
 - Cloud Data Logging
 - Mobile Application
@@ -179,7 +179,7 @@ Smart-EV-Motor-Protection/
 
 ---
 
-# 👨‍💻 Developed Using
+#  Developed Using
 
 - ESP32
 - Arduino IDE
@@ -191,7 +191,7 @@ Smart-EV-Motor-Protection/
 
 ---
 
-# 📄 License
+#  License
 
 This project is developed for educational and research purposes.
 
