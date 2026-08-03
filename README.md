@@ -10,7 +10,7 @@ Electric vehicle motors are subjected to varying loads during operation. High me
 
 This project continuously monitors motor temperature and motor current using sensors connected to an ESP32. Based on predefined protection levels, the system automatically activates the cooling fan, provides warnings, and shuts down the motor if the temperature exceeds safe operating limits.
 
-Additionally, the system integrates three ultrasonic sensors for obstacle detection. When the vehicle is operating above a predefined speed threshold, obstacles are detected and the motor speed is automatically reduced or stopped to improve safety.
+Additionally, the system integrates three ultrasonic sensors for obstacle detection. When the vehicle is operating above a predefined speed threshold, obstacles are detected and the motor speed is automatically reduced to improve safety.
 
 The complete system can be monitored through an OLED display as well as a modern web-based dashboard.
 
@@ -26,7 +26,7 @@ The complete system can be monitored through an OLED display as well as a modern
 - Display live parameters on OLED.
 - Monitor the complete system through a web dashboard.
 - Detect front, left and right obstacles.
-- Automatically reduce speed or stop the motor during obstacle detection.
+- Automatically reduce speed during obstacle detection.
 - Demonstrate an intelligent EV motor protection system.
 
 ---
