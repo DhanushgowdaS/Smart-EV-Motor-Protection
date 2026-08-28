@@ -1,227 +1,410 @@
 import streamlit as st
+import requests
 import time
 from datetime import datetime
 
+
 # ============================================================
-# PAGE CONFIGURATION
+# PAGE CONFIG
 # ============================================================
 
 st.set_page_config(
-    page_title="EV Motor Protection System",
+    page_title="EV System",
     page_icon="⚡",
-    layout="wide",
-    initial_sidebar_state="collapsed"
+    layout="wide"
 )
 
+
 # ============================================================
-# CUSTOM CSS
+# BACKEND URL
+# ============================================================
+
+BACKEND_URL = "YOUR_BACKEND_URL/data"
+
+
+# ============================================================
+# CSS
 # ============================================================
 
 st.markdown("""
 <style>
 
-html, body, [class*="css"] {
-    font-family: Arial, sans-serif;
-}
-
 .stApp {
-    background: #050b10;
+    background: #03080d;
     color: white;
 }
 
-/* Remove Streamlit top space */
 .block-container {
-    padding-top: 1rem;
-    padding-bottom: 0rem;
-    max-width: 1400px;
+    max-width: 1450px;
+    padding-top: 25px;
 }
 
-/* Main dashboard */
+
+/* MAIN DASHBOARD */
+
 .dashboard {
-    background: linear-gradient(145deg, #07131c, #02070b);
-    border: 2px solid #263642;
-    border-radius: 28px;
-    padding: 25px;
-    box-shadow: 0 0 35px rgba(0,0,0,0.7);
+
+    background:
+    linear-gradient(
+        145deg,
+        #08151f,
+        #02070b
+    );
+
+    border:
+    2px solid #263642;
+
+    border-radius:
+    30px;
+
+    padding:
+    25px;
+
+    box-shadow:
+    0 0 40px rgba(0,0,0,0.8);
+
 }
 
-/* Header */
+
+/* HEADER */
+
 .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #34434d;
-    padding-bottom: 15px;
-    margin-bottom: 20px;
+
+    display:
+    flex;
+
+    justify-content:
+    space-between;
+
+    align-items:
+    center;
+
+    border-bottom:
+    1px solid #34434d;
+
+    padding-bottom:
+    15px;
+
+    margin-bottom:
+    20px;
+
 }
 
-.ev-title {
-    font-size: 30px;
-    font-weight: bold;
-}
+.ev {
 
-.ev-green {
-    color: #54d63b;
-}
+    font-size:
+    30px;
 
-.clock {
-    font-size: 25px;
-    font-weight: bold;
-}
+    font-weight:
+    bold;
 
-.ready {
-    color: #54d63b;
-    font-size: 25px;
-    font-weight: bold;
-}
-
-/* Cards */
-.card {
-    background: linear-gradient(145deg, #101e28, #071018);
-    border: 1px solid #33444f;
-    border-radius: 20px;
-    padding: 22px;
-    margin-bottom: 18px;
-    min-height: 150px;
-    box-shadow: inset 0 0 15px rgba(255,255,255,0.02);
-}
-
-.card-title {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 12px;
-}
-
-.big-value {
-    font-size: 45px;
-    font-weight: bold;
-}
-
-.unit {
-    font-size: 22px;
-    color: #d5dce0;
-}
-
-.blue {
-    color: #168cff;
-}
-
-.yellow {
-    color: #ffc400;
 }
 
 .green {
-    color: #55d63a;
+
+    color:
+    #55d63a;
+
 }
 
-.red {
-    color: #ff3b30;
+.ready {
+
+    color:
+    #55d63a;
+
+    font-size:
+    25px;
+
+    font-weight:
+    bold;
+
 }
 
-/* Fan */
-.fan-icon {
-    font-size: 48px;
+.clock {
+
+    font-size:
+    24px;
+
+    font-weight:
+    bold;
+
 }
 
-.fan-status {
-    font-size: 38px;
-    font-weight: bold;
-}
 
-/* Central gauge */
-.gauge-container {
-    height: 420px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
+/* CARD */
 
-.gauge {
-    width: 340px;
-    height: 340px;
-    border-radius: 50%;
+.card {
+
     background:
-        conic-gradient(
-            #54d63b 0deg,
-            #54d63b 100deg,
-            #168cff 150deg,
-            #17232c 150deg,
-            #17232c 360deg
-        );
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 0 25px rgba(40,150,255,0.15);
+    linear-gradient(
+        145deg,
+        #101e28,
+        #071018
+    );
+
+    border:
+    1px solid #33444f;
+
+    border-radius:
+    20px;
+
+    padding:
+    22px;
+
+    margin-bottom:
+    18px;
+
+    min-height:
+    150px;
+
 }
 
-.gauge-inner {
-    width: 270px;
-    height: 270px;
-    border-radius: 50%;
-    background: #071018;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+
+/* TITLE */
+
+.title {
+
+    font-size:
+    20px;
+
+    font-weight:
+    bold;
+
+    margin-bottom:
+    10px;
+
 }
 
-.speed {
-    font-size: 70px;
-    font-weight: bold;
+
+/* VALUE */
+
+.value {
+
+    font-size:
+    45px;
+
+    font-weight:
+    bold;
+
 }
 
-.speed-unit {
-    font-size: 25px;
+.blue {
+
+    color:
+    #168cff;
+
 }
 
-.drive {
-    color: #54d63b;
-    font-size: 35px;
-    font-weight: bold;
-    margin-top: 10px;
+.yellow {
+
+    color:
+    #ffc400;
+
 }
 
-/* Bottom */
-.bottom-bar {
-    border-top: 1px solid #34434d;
-    margin-top: 15px;
-    padding-top: 18px;
-    display: flex;
-    justify-content: space-around;
-    font-size: 22px;
+
+/* FAN */
+
+.fan-icon {
+
+    font-size:
+    45px;
+
+}
+
+.fan-value {
+
+    font-size:
+    35px;
+
+    font-weight:
+    bold;
+
+}
+
+
+/* STATUS */
+
+.normal {
+
+    color:
+    #55d63a;
+
+    font-size:
+    32px;
+
+    font-weight:
+    bold;
+
 }
 
 .warning {
-    color: #ffc400;
-    font-size: 30px;
+
+    color:
+    #ffc400;
+
+    font-size:
+    32px;
+
+    font-weight:
+    bold;
+
 }
 
-/* Status */
-.status-normal {
-    color: #55d63a;
-    font-size: 32px;
-    font-weight: bold;
+.emergency {
+
+    color:
+    #ff3b30;
+
+    font-size:
+    32px;
+
+    font-weight:
+    bold;
+
 }
 
-.status-warning {
-    color: #ffc400;
-    font-size: 32px;
-    font-weight: bold;
+
+/* GAUGE */
+
+.gauge {
+
+    width:
+    330px;
+
+    height:
+    330px;
+
+    border-radius:
+    50%;
+
+    background:
+    conic-gradient(
+        #55d63a 0deg,
+        #168cff 140deg,
+        #182630 140deg,
+        #182630 360deg
+    );
+
+    margin:
+    auto;
+
+    display:
+    flex;
+
+    align-items:
+    center;
+
+    justify-content:
+    center;
+
 }
 
-.status-emergency {
-    color: #ff3b30;
-    font-size: 32px;
-    font-weight: bold;
+
+.gauge-inner {
+
+    width:
+    260px;
+
+    height:
+    260px;
+
+    border-radius:
+    50%;
+
+    background:
+    #071018;
+
+    display:
+    flex;
+
+    flex-direction:
+    column;
+
+    align-items:
+    center;
+
+    justify-content:
+    center;
+
 }
 
-/* Hide Streamlit menu */
+
+.speed {
+
+    font-size:
+    65px;
+
+    font-weight:
+    bold;
+
+}
+
+
+.speed-unit {
+
+    font-size:
+    22px;
+
+}
+
+
+.drive {
+
+    color:
+    #55d63a;
+
+    font-size:
+    30px;
+
+    font-weight:
+    bold;
+
+    margin-top:
+    10px;
+
+}
+
+
+/* BOTTOM */
+
+.bottom {
+
+    border-top:
+    1px solid #34434d;
+
+    margin-top:
+    15px;
+
+    padding-top:
+    18px;
+
+    display:
+    flex;
+
+    justify-content:
+    space-around;
+
+    font-size:
+    20px;
+
+}
+
+
+/* REMOVE STREAMLIT */
+
 #MainMenu {
-    visibility: hidden;
+
+    visibility:
+    hidden;
+
 }
 
 footer {
-    visibility: hidden;
+
+    visibility:
+    hidden;
+
 }
 
 </style>
@@ -229,313 +412,473 @@ footer {
 
 
 # ============================================================
-# SENSOR VALUES
+# GET SENSOR DATA
 # ============================================================
 
-# ------------------------------------------------------------
-# TEMPORARY VALUES
-# Replace these with ESP32 live values later
-# ------------------------------------------------------------
+try:
 
-battery_voltage = 7.65
-motor_current = 0.48
-motor_temperature = 30.1
+    response = requests.get(
+        BACKEND_URL,
+        timeout=3
+    )
 
-# Fan condition
-FAN_ON_TEMP = 31.0
+    if response.status_code == 200:
 
-if motor_temperature >= FAN_ON_TEMP:
-    fan_status = "ON"
-    fan_class = "green"
+        data = response.json()
+
+    else:
+
+        data = None
+
+except:
+
+    data = None
+
+
+# ============================================================
+# DEFAULT VALUES
+# ============================================================
+
+if data is None:
+
+    voltage = 0
+
+    current = 0
+
+    temperature = 0
+
+    current_trend = "NO DATA"
+
+    temperature_trend = "NO DATA"
+
+    load_status = "NO CONNECTION"
+
+    motor_status = "NO CONNECTION"
+
+    fan = False
+
 else:
-    fan_status = "OFF"
-    fan_class = "green"
+
+    voltage = data.get(
+        "voltage",
+        0
+    )
+
+    current = data.get(
+        "current",
+        0
+    )
+
+    temperature = data.get(
+        "temperature",
+        0
+    )
+
+    current_trend = data.get(
+        "current_trend",
+        "STABLE"
+    )
+
+    temperature_trend = data.get(
+        "temperature_trend",
+        "STABLE"
+    )
+
+    load_status = data.get(
+        "load_status",
+        "NORMAL"
+    )
+
+    motor_status = data.get(
+        "motor_status",
+        "NORMAL"
+    )
+
+    fan = data.get(
+        "fan",
+        False
+    )
 
 
 # ============================================================
-# MOTOR STATUS
+# TIME
 # ============================================================
 
-if motor_temperature >= 40:
-    motor_status = "EMERGENCY"
-    status_class = "status-emergency"
+current_time = datetime.now().strftime(
+    "%I:%M %p"
+)
 
-elif motor_temperature >= 35:
-    motor_status = "WARNING"
-    status_class = "status-warning"
+
+# ============================================================
+# STATUS CLASS
+# ============================================================
+
+if motor_status == "EMERGENCY":
+
+    status_class = "emergency"
+
+elif motor_status == "WARNING":
+
+    status_class = "warning"
 
 else:
-    motor_status = "NORMAL"
-    status_class = "status-normal"
+
+    status_class = "normal"
 
 
 # ============================================================
-# SPEED / ODO / RANGE
+# FAN
 # ============================================================
 
-# These are placeholders because we don't currently have
-# a speed sensor or wheel encoder.
+if fan:
 
-speed = 0
-gear = "D"
+    fan_text = "ON"
 
-odo = 0
-vehicle_range = 0
+else:
 
-
-# ============================================================
-# CURRENT TIME
-# ============================================================
-
-current_time = datetime.now().strftime("%I:%M %p")
+    fan_text = "OFF"
 
 
 # ============================================================
 # DASHBOARD
 # ============================================================
 
-st.markdown('<div class="dashboard">', unsafe_allow_html=True)
+st.markdown(
+    '<div class="dashboard">',
+    unsafe_allow_html=True
+)
 
 
 # ============================================================
 # HEADER
 # ============================================================
 
-st.markdown(f"""
-<div class="header">
+st.markdown(
+    f"""
+    <div class="header">
 
-    <div class="ev-title">
-        <span class="ev-green">EV</span>
-        &nbsp; SYSTEM
+        <div class="ev">
+            <span class="green">EV</span>
+            &nbsp; SYSTEM
+        </div>
+
+        <div class="clock">
+            {current_time}
+        </div>
+
+        <div class="ready">
+            READY
+        </div>
+
     </div>
-
-    <div class="clock">
-        {current_time}
-    </div>
-
-    <div class="ready">
-        READY
-    </div>
-
-</div>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True
+)
 
 
 # ============================================================
-# MAIN 3 COLUMN LAYOUT
+# THREE COLUMNS
 # ============================================================
 
-left, center, right = st.columns([1, 1.25, 1])
+left, center, right = st.columns(
+    [1, 1.3, 1]
+)
 
 
 # ============================================================
-# LEFT SIDE
+# LEFT
 # ============================================================
 
 with left:
 
-    # Temperature
-    st.markdown(f"""
-    <div class="card">
+    # TEMP
 
-        <div class="card-title">
-            🌡️ &nbsp; TEMP
-        </div>
+    st.markdown(
+        f"""
+        <div class="card">
 
-        <div class="big-value blue">
-            {motor_temperature:.1f}
-            <span class="unit">°C</span>
-        </div>
+            <div class="title">
+                🌡️ &nbsp; TEMP
+            </div>
 
-        <div style="margin-top:15px;
-                    height:10px;
-                    background:linear-gradient(
+            <div class="value blue">
+                {temperature:.2f}
+                <span style="font-size:20px">
+                °C
+                </span>
+            </div>
+
+            <div style="
+                margin-top:15px;
+                height:10px;
+                border-radius:10px;
+                background:
+                linear-gradient(
                     90deg,
-                    #54d63b,
-                    #54d63b,
+                    #55d63a,
+                    #55d63a,
                     #ffc400,
-                    #ff3b30);
-                    border-radius:10px;">
+                    #ff3b30
+                );
+            "></div>
+
+            <div style="
+                display:flex;
+                justify-content:space-between;
+                margin-top:5px;
+            ">
+                <span>0</span>
+                <span>60</span>
+                <span>120</span>
+            </div>
+
         </div>
-
-        <div style="display:flex;
-                    justify-content:space-between;
-                    margin-top:5px;">
-            <span>0</span>
-            <span>60</span>
-            <span>120</span>
-        </div>
-
-    </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
 
-    # Current
-    st.markdown(f"""
-    <div class="card">
+    # CURRENT
 
-        <div class="card-title">
-            ⚡ &nbsp; CURRENT
-        </div>
+    st.markdown(
+        f"""
+        <div class="card">
 
-        <div class="big-value yellow">
-            {motor_current:.3f}
-            <span class="unit">A</span>
-        </div>
+            <div class="title">
+                ⚡ &nbsp; CURRENT
+            </div>
 
-        <div style="margin-top:15px;
-                    height:10px;
-                    background:linear-gradient(
+            <div class="value yellow">
+                {current:.3f}
+                <span style="font-size:20px">
+                A
+                </span>
+            </div>
+
+            <div style="
+                margin-top:15px;
+                height:10px;
+                border-radius:10px;
+                background:
+                linear-gradient(
                     90deg,
-                    #54d63b,
-                    #54d63b,
+                    #55d63a,
+                    #55d63a,
                     #ffc400,
-                    #ff3b30);
-                    border-radius:10px;">
-        </div>
+                    #ff3b30
+                );
+            "></div>
 
-        <div style="display:flex;
-                    justify-content:space-between;
-                    margin-top:5px;">
-            <span>0</span>
-            <span>15</span>
-            <span>30</span>
-        </div>
+            <div style="
+                display:flex;
+                justify-content:space-between;
+                margin-top:5px;
+            ">
+                <span>0</span>
+                <span>15</span>
+                <span>30</span>
+            </div>
 
-    </div>
-    """, unsafe_allow_html=True)
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 # ============================================================
-# CENTER SPEED GAUGE
+# CENTER
 # ============================================================
 
 with center:
 
-    st.markdown(f"""
-    <div class="gauge-container">
+    # Since we don't have a speed sensor yet,
+    # show motor load percentage instead.
 
-        <div class="gauge">
+    load_percentage = min(
+        max((current / 5.0) * 100, 0),
+        100
+    )
 
-            <div class="gauge-inner">
 
-                <div class="speed">
-                    {speed}
-                </div>
+    st.markdown(
+        f"""
+        <div style="
+            height:420px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+        ">
 
-                <div class="speed-unit">
-                    km/h
-                </div>
+            <div class="gauge">
 
-                <div class="drive">
-                    {gear}
+                <div class="gauge-inner">
+
+                    <div class="speed">
+                        {load_percentage:.0f}
+                    </div>
+
+                    <div class="speed-unit">
+                        LOAD %
+                    </div>
+
+                    <div class="drive">
+                        D
+                    </div>
+
                 </div>
 
             </div>
 
         </div>
-
-    </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
 
 # ============================================================
-# RIGHT SIDE
+# RIGHT
 # ============================================================
 
 with right:
 
     # FAN
-    st.markdown(f"""
-    <div class="card">
 
-        <div class="card-title">
-            🌀 &nbsp; FAN
+    st.markdown(
+        f"""
+        <div class="card">
+
+            <div class="title">
+                🌀 &nbsp; FAN
+            </div>
+
+            <div class="fan-icon">
+                🌀
+            </div>
+
+            <div class="fan-value green">
+                {fan_text}
+            </div>
+
+            <div>
+                AUTO MODE
+            </div>
+
         </div>
-
-        <div class="fan-icon">
-            🌀
-        </div>
-
-        <div class="fan-status {fan_class}">
-            {fan_status}
-        </div>
-
-        <div>
-            AUTO MODE
-        </div>
-
-    </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
 
     # VOLTAGE
-    st.markdown(f"""
-    <div class="card">
 
-        <div class="card-title">
-            🔋 &nbsp; VOLTAGE
+    st.markdown(
+        f"""
+        <div class="card">
+
+            <div class="title">
+                🔋 &nbsp; VOLTAGE
+            </div>
+
+            <div class="value blue">
+                {voltage:.2f}
+                <span style="font-size:20px">
+                V
+                </span>
+            </div>
+
         </div>
-
-        <div class="big-value blue">
-            {battery_voltage:.2f}
-            <span class="unit">V</span>
-        </div>
-
-    </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
 
     # STATUS
-    st.markdown(f"""
-    <div class="card">
 
-        <div class="card-title">
-            🛡️ &nbsp; STATUS
+    st.markdown(
+        f"""
+        <div class="card">
+
+            <div class="title">
+                🛡️ &nbsp; STATUS
+            </div>
+
+            <div class="{status_class}">
+                {motor_status}
+            </div>
+
         </div>
-
-        <div class="{status_class}">
-            {motor_status}
-        </div>
-
-    </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
 
 # ============================================================
 # BOTTOM BAR
 # ============================================================
 
-st.markdown(f"""
-<div class="bottom-bar">
+st.markdown(
+    """
+    <div class="bottom">
 
-    <div class="ev-green">
-        💡
+        <div class="green">
+            💡
+        </div>
+
+        <div>
+            ODO &nbsp; <b>---</b>
+        </div>
+
+        <div>
+            RANGE &nbsp; <b>---</b>
+        </div>
+
+        <div>
+            ⚠️
+        </div>
+
     </div>
+    """,
+    unsafe_allow_html=True
+)
 
-    <div>
-        ODO &nbsp;
-        <b>{odo} km</b>
+
+# ============================================================
+# EXTRA LIVE INFORMATION
+# ============================================================
+
+st.markdown(
+    f"""
+    <div style="
+        margin-top:15px;
+        text-align:center;
+        color:#8c9aa3;
+    ">
+
+        Current Trend:
+        <b>{current_trend}</b>
+        &nbsp;&nbsp; | &nbsp;&nbsp;
+
+        Temperature Trend:
+        <b>{temperature_trend}</b>
+        &nbsp;&nbsp; | &nbsp;&nbsp;
+
+        Load:
+        <b>{load_status}</b>
+
     </div>
-
-    <div>
-        RANGE &nbsp;
-        <b>{vehicle_range} km</b>
-    </div>
-
-    <div class="warning">
-        ⚠️
-    </div>
-
-</div>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True
+)
 
 
 # ============================================================
 # CLOSE DASHBOARD
 # ============================================================
 
-st.markdown('</div>', unsafe_allow_html=True)
+st.markdown(
+    '</div>',
+    unsafe_allow_html=True
+)
 
 
 # ============================================================
@@ -543,4 +886,5 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ============================================================
 
 time.sleep(1)
+
 st.rerun()
