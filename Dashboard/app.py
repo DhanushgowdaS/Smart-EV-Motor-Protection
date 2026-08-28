@@ -1,348 +1,733 @@
 import streamlit as st
-import random
+import math
 from datetime import datetime
 
-# ---------------------------------------------------------
+# ============================================================
 # PAGE CONFIGURATION
-# ---------------------------------------------------------
+# ============================================================
 
 st.set_page_config(
-    page_title="Smart EV Motor Protection",
+    page_title="EV System Dashboard",
     page_icon="⚡",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-# ---------------------------------------------------------
+# ============================================================
+# EV DATA
+# ============================================================
+# Replace these values later with your ESP32/live sensor data.
+
+temperature = 42.0       # °C
+current = 2.6            # A
+speed = 45.0             # km/h
+voltage = 48.6           # V
+
+fan_on = True
+gear = "D"
+
+odo = 1256              # km
+range_km = 78           # km
+
+# ============================================================
+# STATUS LOGIC
+# ============================================================
+
+if temperature >= 100 or current >= 30:
+    status = "CRITICAL"
+    status_symbol = "⚠"
+elif temperature >= 75 or current >= 20:
+    status = "WARNING"
+    status_symbol = "⚠"
+else:
+    status = "NORMAL"
+    status_symbol = "✓"
+
+# ============================================================
+# FAN LOGIC
+# ============================================================
+
+fan_status = "ON" if fan_on else "OFF"
+
+# ============================================================
+# SPEED GAUGE
+# ============================================================
+
+MAX_SPEED = 100
+
+# Convert speed into angle
+speed_ratio = max(0, min(speed / MAX_SPEED, 1))
+angle = -135 + (270 * speed_ratio)
+
+# Gauge coordinates
+cx = 150
+cy = 150
+radius = 110
+
+# ============================================================
 # CUSTOM CSS
-# ---------------------------------------------------------
+# ============================================================
 
-st.markdown("""
-<style>
+st.markdown(
+    """
+    <style>
 
-.main {
-    background-color: #0b1220;
-}
+    /* Remove Streamlit default spacing */
+    .block-container {
+        padding-top: 1rem;
+        padding-left: 2rem;
+        padding-right: 2rem;
+        padding-bottom: 1rem;
+        max-width: 1500px;
+    }
 
-.block-container {
-    padding-top: 1.5rem;
-    padding-bottom: 2rem;
-}
+    header[data-testid="stHeader"] {
+        background: transparent;
+    }
 
-h1, h2, h3 {
-    color: white;
-}
+    /* Main dashboard */
+    .dashboard {
+        background: #071017;
+        border: 2px solid #263641;
+        border-radius: 28px;
+        padding: 25px;
+        min-height: 780px;
+        box-shadow:
+            0 0 35px rgba(0,0,0,0.7),
+            inset 0 0 25px rgba(0,0,0,0.5);
+    }
 
-.dashboard-card {
-    background-color: #151e2d;
-    padding: 20px;
-    border-radius: 15px;
-    border: 1px solid #263449;
-    margin-bottom: 15px;
-}
+    /* Header */
+    .top-header {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        align-items: center;
+        border-bottom: 2px solid #263641;
+        padding: 5px 25px 20px 25px;
+        margin-bottom: 25px;
+    }
 
-.card-title {
-    font-size: 16px;
-    color: #9aa7b8;
-    margin-bottom: 8px;
-}
+    .ev-title {
+        font-size: 31px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        color: #e8f0f4;
+    }
 
-.card-value {
-    font-size: 32px;
-    font-weight: bold;
-    color: white;
-}
+    .ev-title span {
+        color: #53d329;
+    }
 
-.card-unit {
-    font-size: 15px;
-    color: #9aa7b8;
-}
+    .clock {
+        text-align: center;
+        font-size: 27px;
+        font-weight: 700;
+        color: white;
+    }
 
-.status-normal {
-    background-color: #123b29;
-    color: #4ade80;
-    padding: 10px;
-    border-radius: 10px;
-    text-align: center;
-    font-weight: bold;
-}
+    .ready {
+        text-align: right;
+        font-size: 25px;
+        font-weight: 800;
+        color: #52d329;
+    }
 
-.status-warning {
-    background-color: #493815;
-    color: #facc15;
-    padding: 10px;
-    border-radius: 10px;
-    text-align: center;
-    font-weight: bold;
-}
+    /* Three columns */
+    .main-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.45fr 1fr;
+        gap: 25px;
+        align-items: stretch;
+    }
 
-.status-danger {
-    background-color: #4a1d1d;
-    color: #f87171;
-    padding: 10px;
-    border-radius: 10px;
-    text-align: center;
-    font-weight: bold;
-}
+    /* Cards */
+    .card {
+        background: linear-gradient(
+            145deg,
+            #101d25,
+            #0a141b
+        );
 
-</style>
-""", unsafe_allow_html=True)
+        border: 1px solid #334653;
+        border-radius: 20px;
+        padding: 25px;
+        box-shadow:
+            inset 0 0 15px rgba(255,255,255,0.02),
+            0 5px 15px rgba(0,0,0,0.3);
 
-# ---------------------------------------------------------
+        margin-bottom: 20px;
+    }
+
+    .card-title {
+        color: #e8eef2;
+        font-size: 25px;
+        font-weight: 800;
+        text-align: center;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+    }
+
+    .value {
+        font-size: 48px;
+        font-weight: 800;
+        text-align: center;
+        line-height: 1;
+    }
+
+    .unit {
+        font-size: 22px;
+        color: #d5dce0;
+        margin-left: 5px;
+    }
+
+    .blue {
+        color: #1888ff;
+    }
+
+    .yellow {
+        color: #ffbe16;
+    }
+
+    .green {
+        color: #56d832;
+    }
+
+    /* Progress bar */
+    .bar {
+        height: 13px;
+        border-radius: 10px;
+        margin-top: 25px;
+        background: linear-gradient(
+            90deg,
+            #54d631 0%,
+            #54d631 45%,
+            #ffc400 70%,
+            #ff3c30 100%
+        );
+    }
+
+    .scale {
+        display: flex;
+        justify-content: space-between;
+        color: #e4e9ec;
+        font-size: 18px;
+        margin-top: 7px;
+    }
+
+    /* Centre gauge */
+    .gauge-container {
+        text-align: center;
+        height: 540px;
+        position: relative;
+    }
+
+    .gauge-title {
+        color: #8e9ba3;
+        font-size: 17px;
+        letter-spacing: 2px;
+        margin-top: 5px;
+    }
+
+    .speed-number {
+        font-size: 90px;
+        font-weight: 800;
+        color: white;
+        line-height: 0.95;
+        margin-top: -290px;
+    }
+
+    .speed-unit {
+        color: #dbe2e6;
+        font-size: 25px;
+        font-weight: 600;
+    }
+
+    .gear {
+        font-size: 55px;
+        font-weight: 800;
+        color: #52d329;
+        margin-top: 55px;
+    }
+
+    /* Right side */
+    .fan-icon {
+        font-size: 65px;
+        text-align: center;
+        margin: 5px;
+    }
+
+    .fan-status {
+        text-align: center;
+        font-size: 42px;
+        font-weight: 800;
+        color: #53d329;
+    }
+
+    .fan-mode {
+        text-align: center;
+        color: #d8dfe3;
+        font-size: 18px;
+        margin-top: 5px;
+    }
+
+    .battery-icon {
+        font-size: 52px;
+        text-align: center;
+        color: #1687ff;
+    }
+
+    .voltage {
+        text-align: center;
+        color: #1687ff;
+        font-size: 42px;
+        font-weight: 800;
+    }
+
+    .status-icon {
+        text-align: center;
+        font-size: 55px;
+        color: #53d329;
+    }
+
+    .status-value {
+        text-align: center;
+        color: #53d329;
+        font-size: 30px;
+        font-weight: 800;
+    }
+
+    /* Bottom bar */
+    .bottom-bar {
+        border-top: 2px solid #263641;
+        margin-top: 5px;
+        padding-top: 20px;
+
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        text-align: center;
+    }
+
+    .bottom-label {
+        color: #9aa7ae;
+        font-size: 18px;
+        letter-spacing: 1px;
+    }
+
+    .bottom-value {
+        color: white;
+        font-size: 28px;
+        font-weight: 700;
+    }
+
+    .warning {
+        color: #ffc400;
+        font-size: 32px;
+    }
+
+    /* Responsive */
+    @media(max-width: 900px) {
+
+        .main-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .top-header {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .ready,
+        .ev-title,
+        .clock {
+            text-align: center;
+        }
+
+        .bottom-bar {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# ============================================================
+# GAUGE SVG
+# ============================================================
+
+def create_gauge(speed):
+
+    max_speed = 100
+    cx = 150
+    cy = 150
+    r = 112
+
+    # Background arc
+    points = []
+
+    for i in range(101):
+        a = math.radians(-135 + (270 * i / 100))
+
+        x = cx + r * math.cos(a)
+        y = cy + r * math.sin(a)
+
+        points.append(f"{x:.2f},{y:.2f}")
+
+    background_arc = " ".join(points)
+
+    # Green section
+    green_points = []
+
+    green_end = min(speed / max_speed, 1)
+
+    for i in range(51):
+        ratio = (green_end * i) / 50
+        a = math.radians(-135 + (270 * ratio))
+
+        x = cx + r * math.cos(a)
+        y = cy + r * math.sin(a)
+
+        green_points.append(f"{x:.2f},{y:.2f}")
+
+    green_arc = " ".join(green_points)
+
+    # Needle
+    needle_angle = math.radians(
+        -135 + (270 * min(speed / max_speed, 1))
+    )
+
+    nx = cx + 100 * math.cos(needle_angle)
+    ny = cy + 100 * math.sin(needle_angle)
+
+    # Tick marks
+    ticks = ""
+
+    for i in range(0, 101, 10):
+
+        a = math.radians(-135 + (270 * i / 100))
+
+        x1 = cx + 100 * math.cos(a)
+        y1 = cy + 100 * math.sin(a)
+
+        x2 = cx + 112 * math.cos(a)
+        y2 = cy + 112 * math.sin(a)
+
+        ticks += f"""
+        <line
+            x1="{x1:.1f}"
+            y1="{y1:.1f}"
+            x2="{x2:.1f}"
+            y2="{y2:.1f}"
+            stroke="#e6edf0"
+            stroke-width="2"
+        />
+        """
+
+    return f"""
+    <svg
+        viewBox="0 0 300 300"
+        width="100%"
+        height="430px"
+        xmlns="http://www.w3.org/2000/svg"
+    >
+
+        <!-- Outer dark gauge -->
+        <polyline
+            points="{background_arc}"
+            fill="none"
+            stroke="#263641"
+            stroke-width="22"
+            stroke-linecap="round"
+        />
+
+        <!-- Green active portion -->
+        <polyline
+            points="{green_arc}"
+            fill="none"
+            stroke="#52d329"
+            stroke-width="22"
+            stroke-linecap="round"
+        />
+
+        <!-- Blue section -->
+        <path
+            d="M 118 57
+               A 112 112 0 0 1 150 38"
+            fill="none"
+            stroke="#1687ff"
+            stroke-width="22"
+        />
+
+        <!-- Ticks -->
+        {ticks}
+
+        <!-- Needle -->
+        <line
+            x1="{cx}"
+            y1="{cy}"
+            x2="{nx:.1f}"
+            y2="{ny:.1f}"
+            stroke="white"
+            stroke-width="4"
+        />
+
+        <circle
+            cx="{cx}"
+            cy="{cy}"
+            r="8"
+            fill="white"
+        />
+
+    </svg>
+    """
+
+
+# ============================================================
+# CURRENT TIME
+# ============================================================
+
+current_time = datetime.now().strftime("%I:%M %p")
+
+# ============================================================
+# DASHBOARD
+# ============================================================
+
+st.markdown('<div class="dashboard">', unsafe_allow_html=True)
+
+# ------------------------------------------------------------
 # HEADER
-# ---------------------------------------------------------
+# ------------------------------------------------------------
 
-st.title("⚡ Smart EV Motor Protection System")
+st.markdown(
+    f"""
+    <div class="top-header">
 
-st.caption(
-    "Real-time monitoring and protection dashboard for an electric vehicle motor"
+        <div class="ev-title">
+            <span>EV</span> SYSTEM
+        </div>
+
+        <div class="clock">
+            {current_time}
+        </div>
+
+        <div class="ready">
+            READY
+        </div>
+
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
-st.divider()
+# ------------------------------------------------------------
+# MAIN GRID
+# ------------------------------------------------------------
 
-# ---------------------------------------------------------
-# DEMO SENSOR DATA
-# ---------------------------------------------------------
-# These values are currently generated for testing.
-# Later we can replace this section with ESP32 data.
+st.markdown('<div class="main-grid">', unsafe_allow_html=True)
 
-temperature = round(random.uniform(28, 40), 1)
-voltage = round(random.uniform(44, 52), 1)
-current = round(random.uniform(3, 12), 1)
-motor_load = round(random.uniform(20, 80), 1)
+# ============================================================
+# LEFT COLUMN
+# ============================================================
 
-speed = random.randint(0, 80)
-odo = round(random.uniform(1200, 3500), 1)
-range_km = random.randint(50, 120)
+st.markdown(
+    f"""
+    <div>
 
-fan_on = temperature >= 35
+        <!-- TEMPERATURE -->
+        <div class="card">
 
-# ---------------------------------------------------------
-# PROTECTION LOGIC
-# ---------------------------------------------------------
+            <div class="card-title">
+                🌡️ &nbsp; TEMP
+            </div>
 
-if temperature >= 45 or current >= 15:
-    system_status = "DANGER"
-elif temperature >= 38 or current >= 12:
-    system_status = "WARNING"
-else:
-    system_status = "NORMAL"
+            <div class="value blue">
+                {temperature:.0f}
+                <span class="unit">°C</span>
+            </div>
 
-# ---------------------------------------------------------
-# TOP STATUS
-# ---------------------------------------------------------
+            <div class="bar"></div>
 
-col1, col2, col3 = st.columns(3)
+            <div class="scale">
+                <span>0</span>
+                <span>60</span>
+                <span>120</span>
+            </div>
 
-with col1:
-    st.markdown(
-        '<div class="dashboard-card">'
-        '<div class="card-title">SYSTEM</div>'
-        '<div class="card-value">⚡ EV</div>'
-        '<div class="card-unit">Motor Protection System</div>'
-        '</div>',
-        unsafe_allow_html=True
-    )
+        </div>
 
-with col2:
-    current_time = datetime.now().strftime("%I:%M %p")
 
-    st.markdown(
-        f'<div class="dashboard-card">'
-        f'<div class="card-title">TIME</div>'
-        f'<div class="card-value">{current_time}</div>'
-        f'<div class="card-unit">Live system time</div>'
-        f'</div>',
-        unsafe_allow_html=True
-    )
+        <!-- CURRENT -->
+        <div class="card">
 
-with col3:
-    if system_status == "NORMAL":
-        st.markdown(
-            '<div class="status-normal">● SYSTEM NORMAL</div>',
-            unsafe_allow_html=True
-        )
-    elif system_status == "WARNING":
-        st.markdown(
-            '<div class="status-warning">⚠ SYSTEM WARNING</div>',
-            unsafe_allow_html=True
-        )
-    else:
-        st.markdown(
-            '<div class="status-danger">⚠ MOTOR PROTECTION ACTIVE</div>',
-            unsafe_allow_html=True
-        )
+            <div class="card-title">
+                ⚡ &nbsp; CURRENT
+            </div>
 
-# ---------------------------------------------------------
-# MAIN SENSOR VALUES
-# ---------------------------------------------------------
+            <div class="value yellow">
+                {current:.1f}
+                <span class="unit">A</span>
+            </div>
 
-st.subheader("Live Parameters")
+            <div class="bar"></div>
 
-c1, c2, c3, c4 = st.columns(4)
+            <div class="scale">
+                <span>0</span>
+                <span>15</span>
+                <span>30</span>
+            </div>
 
-with c1:
-    st.metric(
-        label="🌡 Temperature",
-        value=f"{temperature} °C"
-    )
+        </div>
 
-with c2:
-    st.metric(
-        label="🔋 Voltage",
-        value=f"{voltage} V"
-    )
-
-with c3:
-    st.metric(
-        label="⚡ Current",
-        value=f"{current} A"
-    )
-
-with c4:
-    st.metric(
-        label="⚙ Motor Load",
-        value=f"{motor_load} %"
-    )
-
-# ---------------------------------------------------------
-# MOTOR INFORMATION
-# ---------------------------------------------------------
-
-st.subheader("Motor Information")
-
-m1, m2, m3, m4 = st.columns(4)
-
-with m1:
-    st.metric(
-        label="🚗 Speed",
-        value=f"{speed} km/h"
-    )
-
-with m2:
-    st.metric(
-        label="🛣 ODO",
-        value=f"{odo} km"
-    )
-
-with m3:
-    st.metric(
-        label="🔋 Range",
-        value=f"{range_km} km"
-    )
-
-with m4:
-    fan_status = "ON" if fan_on else "OFF"
-
-    st.metric(
-        label="🌀 Cooling Fan",
-        value=fan_status
-    )
-
-# ---------------------------------------------------------
-# LOAD BAR
-# ---------------------------------------------------------
-
-st.subheader("Motor Load")
-
-st.progress(
-    min(max(int(motor_load), 0), 100),
-    text=f"Motor Load: {motor_load}%"
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
-# ---------------------------------------------------------
-# TEMPERATURE / CURRENT STATUS
-# ---------------------------------------------------------
+# ============================================================
+# CENTRE COLUMN
+# ============================================================
 
-left, right = st.columns(2)
+st.markdown(
+    f"""
+    <div class="gauge-container">
 
-with left:
+        {create_gauge(speed)}
 
-    st.markdown("### 🌡 Temperature Status")
+        <div class="speed-number">
+            {speed:.0f}
+        </div>
 
-    if temperature >= 45:
-        st.error("CRITICAL TEMPERATURE")
-    elif temperature >= 38:
-        st.warning("HIGH TEMPERATURE")
-    else:
-        st.success("TEMPERATURE NORMAL")
+        <div class="speed-unit">
+            km/h
+        </div>
 
-with right:
+        <div class="gear">
+            {gear}
+        </div>
 
-    st.markdown("### ⚡ Current Status")
-
-    if current >= 15:
-        st.error("OVER-CURRENT DETECTED")
-    elif current >= 12:
-        st.warning("HIGH CURRENT")
-    else:
-        st.success("CURRENT NORMAL")
-
-# ---------------------------------------------------------
-# COOLING FAN
-# ---------------------------------------------------------
-
-st.subheader("Cooling System")
-
-if fan_on:
-    st.info("🌀 Cooling Fan: ON — Temperature is above the cooling threshold.")
-else:
-    st.success("🌀 Cooling Fan: OFF — Temperature is within normal range.")
-
-# ---------------------------------------------------------
-# PROTECTION STATUS
-# ---------------------------------------------------------
-
-st.subheader("Protection Status")
-
-if system_status == "NORMAL":
-
-    st.success(
-        "✓ Motor operating normally. "
-        "Temperature, current and load are within safe limits."
-    )
-
-elif system_status == "WARNING":
-
-    st.warning(
-        "⚠ Warning condition detected. "
-        "Motor parameters should be monitored."
-    )
-
-else:
-
-    st.error(
-        "🚨 Protection condition detected! "
-        "Motor may require immediate shutdown."
-    )
-
-# ---------------------------------------------------------
-# SYSTEM DETAILS
-# ---------------------------------------------------------
-
-st.divider()
-
-st.subheader("System Information")
-
-info1, info2, info3 = st.columns(3)
-
-with info1:
-    st.write("**Controller:** ESP32")
-
-with info2:
-    st.write("**Communication:** Wi-Fi")
-
-with info3:
-    st.write("**Dashboard:** Streamlit")
-
-# ---------------------------------------------------------
-# REFRESH
-# ---------------------------------------------------------
-
-st.divider()
-
-st.caption(
-    "Smart EV Motor Protection System • Live Monitoring Dashboard"
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
-if st.button("🔄 Refresh Data"):
-    st.rerun()
+# ============================================================
+# RIGHT COLUMN
+# ============================================================
+
+st.markdown(
+    f"""
+    <div>
+
+        <!-- FAN -->
+        <div class="card">
+
+            <div class="card-title">
+                🌀 &nbsp; FAN
+            </div>
+
+            <div class="fan-icon">
+                🌀
+            </div>
+
+            <div class="fan-status">
+                {fan_status}
+            </div>
+
+            <div class="fan-mode">
+                AUTO MODE
+            </div>
+
+        </div>
+
+
+        <!-- VOLTAGE -->
+        <div class="card">
+
+            <div class="card-title">
+                🔋 &nbsp; VOLTAGE
+            </div>
+
+            <div class="battery-icon">
+                🔋
+            </div>
+
+            <div class="voltage">
+                {voltage:.1f}
+                <span class="unit">V</span>
+            </div>
+
+        </div>
+
+
+        <!-- STATUS -->
+        <div class="card">
+
+            <div class="card-title">
+                🛡️ &nbsp; STATUS
+            </div>
+
+            <div class="status-icon">
+                {status_symbol}
+            </div>
+
+            <div class="status-value">
+                {status}
+            </div>
+
+        </div>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ============================================================
+# BOTTOM INFORMATION BAR
+# ============================================================
+
+st.markdown(
+    f"""
+    <div class="bottom-bar">
+
+        <div>
+            <div class="bottom-label">
+                💡
+            </div>
+        </div>
+
+        <div>
+            <div class="bottom-label">
+                ODO
+            </div>
+
+            <div class="bottom-value">
+                {odo} km
+            </div>
+        </div>
+
+        <div>
+            <div class="bottom-label">
+                RANGE
+            </div>
+
+            <div class="bottom-value">
+                {range_km} km
+            </div>
+        </div>
+
+        <div>
+            <div class="warning">
+                ⚠
+            </div>
+        </div>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown('</div>', unsafe_allow_html=True)
