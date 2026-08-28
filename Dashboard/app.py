@@ -1,890 +1,348 @@
 import streamlit as st
-import requests
-import time
+import random
 from datetime import datetime
 
-
-# ============================================================
-# PAGE CONFIG
-# ============================================================
+# ---------------------------------------------------------
+# PAGE CONFIGURATION
+# ---------------------------------------------------------
 
 st.set_page_config(
-    page_title="EV System",
+    page_title="Smart EV Motor Protection",
     page_icon="⚡",
     layout="wide"
 )
 
-
-# ============================================================
-# BACKEND URL
-# ============================================================
-
-BACKEND_URL = "https://smart-ev-motor-protection.onrender.com"
-
-
-# ============================================================
-# CSS
-# ============================================================
+# ---------------------------------------------------------
+# CUSTOM CSS
+# ---------------------------------------------------------
 
 st.markdown("""
 <style>
 
-.stApp {
-    background: #03080d;
-    color: white;
+.main {
+    background-color: #0b1220;
 }
 
 .block-container {
-    max-width: 1450px;
-    padding-top: 25px;
+    padding-top: 1.5rem;
+    padding-bottom: 2rem;
 }
 
-
-/* MAIN DASHBOARD */
-
-.dashboard {
-
-    background:
-    linear-gradient(
-        145deg,
-        #08151f,
-        #02070b
-    );
-
-    border:
-    2px solid #263642;
-
-    border-radius:
-    30px;
-
-    padding:
-    25px;
-
-    box-shadow:
-    0 0 40px rgba(0,0,0,0.8);
-
+h1, h2, h3 {
+    color: white;
 }
 
-
-/* HEADER */
-
-.header {
-
-    display:
-    flex;
-
-    justify-content:
-    space-between;
-
-    align-items:
-    center;
-
-    border-bottom:
-    1px solid #34434d;
-
-    padding-bottom:
-    15px;
-
-    margin-bottom:
-    20px;
-
+.dashboard-card {
+    background-color: #151e2d;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid #263449;
+    margin-bottom: 15px;
 }
 
-.ev {
-
-    font-size:
-    30px;
-
-    font-weight:
-    bold;
-
+.card-title {
+    font-size: 16px;
+    color: #9aa7b8;
+    margin-bottom: 8px;
 }
 
-.green {
-
-    color:
-    #55d63a;
-
+.card-value {
+    font-size: 32px;
+    font-weight: bold;
+    color: white;
 }
 
-.ready {
-
-    color:
-    #55d63a;
-
-    font-size:
-    25px;
-
-    font-weight:
-    bold;
-
+.card-unit {
+    font-size: 15px;
+    color: #9aa7b8;
 }
 
-.clock {
-
-    font-size:
-    24px;
-
-    font-weight:
-    bold;
-
+.status-normal {
+    background-color: #123b29;
+    color: #4ade80;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: bold;
 }
 
-
-/* CARD */
-
-.card {
-
-    background:
-    linear-gradient(
-        145deg,
-        #101e28,
-        #071018
-    );
-
-    border:
-    1px solid #33444f;
-
-    border-radius:
-    20px;
-
-    padding:
-    22px;
-
-    margin-bottom:
-    18px;
-
-    min-height:
-    150px;
-
+.status-warning {
+    background-color: #493815;
+    color: #facc15;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: bold;
 }
 
-
-/* TITLE */
-
-.title {
-
-    font-size:
-    20px;
-
-    font-weight:
-    bold;
-
-    margin-bottom:
-    10px;
-
-}
-
-
-/* VALUE */
-
-.value {
-
-    font-size:
-    45px;
-
-    font-weight:
-    bold;
-
-}
-
-.blue {
-
-    color:
-    #168cff;
-
-}
-
-.yellow {
-
-    color:
-    #ffc400;
-
-}
-
-
-/* FAN */
-
-.fan-icon {
-
-    font-size:
-    45px;
-
-}
-
-.fan-value {
-
-    font-size:
-    35px;
-
-    font-weight:
-    bold;
-
-}
-
-
-/* STATUS */
-
-.normal {
-
-    color:
-    #55d63a;
-
-    font-size:
-    32px;
-
-    font-weight:
-    bold;
-
-}
-
-.warning {
-
-    color:
-    #ffc400;
-
-    font-size:
-    32px;
-
-    font-weight:
-    bold;
-
-}
-
-.emergency {
-
-    color:
-    #ff3b30;
-
-    font-size:
-    32px;
-
-    font-weight:
-    bold;
-
-}
-
-
-/* GAUGE */
-
-.gauge {
-
-    width:
-    330px;
-
-    height:
-    330px;
-
-    border-radius:
-    50%;
-
-    background:
-    conic-gradient(
-        #55d63a 0deg,
-        #168cff 140deg,
-        #182630 140deg,
-        #182630 360deg
-    );
-
-    margin:
-    auto;
-
-    display:
-    flex;
-
-    align-items:
-    center;
-
-    justify-content:
-    center;
-
-}
-
-
-.gauge-inner {
-
-    width:
-    260px;
-
-    height:
-    260px;
-
-    border-radius:
-    50%;
-
-    background:
-    #071018;
-
-    display:
-    flex;
-
-    flex-direction:
-    column;
-
-    align-items:
-    center;
-
-    justify-content:
-    center;
-
-}
-
-
-.speed {
-
-    font-size:
-    65px;
-
-    font-weight:
-    bold;
-
-}
-
-
-.speed-unit {
-
-    font-size:
-    22px;
-
-}
-
-
-.drive {
-
-    color:
-    #55d63a;
-
-    font-size:
-    30px;
-
-    font-weight:
-    bold;
-
-    margin-top:
-    10px;
-
-}
-
-
-/* BOTTOM */
-
-.bottom {
-
-    border-top:
-    1px solid #34434d;
-
-    margin-top:
-    15px;
-
-    padding-top:
-    18px;
-
-    display:
-    flex;
-
-    justify-content:
-    space-around;
-
-    font-size:
-    20px;
-
-}
-
-
-/* REMOVE STREAMLIT */
-
-#MainMenu {
-
-    visibility:
-    hidden;
-
-}
-
-footer {
-
-    visibility:
-    hidden;
-
+.status-danger {
+    background-color: #4a1d1d;
+    color: #f87171;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: bold;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-
-# ============================================================
-# GET SENSOR DATA
-# ============================================================
-
-try:
-
-    response = requests.get(
-        BACKEND_URL,
-        timeout=3
-    )
-
-    if response.status_code == 200:
-
-        data = response.json()
-
-    else:
-
-        data = None
-
-except:
-
-    data = None
-
-
-# ============================================================
-# DEFAULT VALUES
-# ============================================================
-
-if data is None:
-
-    voltage = 0
-
-    current = 0
-
-    temperature = 0
-
-    current_trend = "NO DATA"
-
-    temperature_trend = "NO DATA"
-
-    load_status = "NO CONNECTION"
-
-    motor_status = "NO CONNECTION"
-
-    fan = False
-
-else:
-
-    voltage = data.get(
-        "voltage",
-        0
-    )
-
-    current = data.get(
-        "current",
-        0
-    )
-
-    temperature = data.get(
-        "temperature",
-        0
-    )
-
-    current_trend = data.get(
-        "current_trend",
-        "STABLE"
-    )
-
-    temperature_trend = data.get(
-        "temperature_trend",
-        "STABLE"
-    )
-
-    load_status = data.get(
-        "load_status",
-        "NORMAL"
-    )
-
-    motor_status = data.get(
-        "motor_status",
-        "NORMAL"
-    )
-
-    fan = data.get(
-        "fan",
-        False
-    )
-
-
-# ============================================================
-# TIME
-# ============================================================
-
-current_time = datetime.now().strftime(
-    "%I:%M %p"
-)
-
-
-# ============================================================
-# STATUS CLASS
-# ============================================================
-
-if motor_status == "EMERGENCY":
-
-    status_class = "emergency"
-
-elif motor_status == "WARNING":
-
-    status_class = "warning"
-
-else:
-
-    status_class = "normal"
-
-
-# ============================================================
-# FAN
-# ============================================================
-
-if fan:
-
-    fan_text = "ON"
-
-else:
-
-    fan_text = "OFF"
-
-
-# ============================================================
-# DASHBOARD
-# ============================================================
-
-st.markdown(
-    '<div class="dashboard">',
-    unsafe_allow_html=True
-)
-
-
-# ============================================================
+# ---------------------------------------------------------
 # HEADER
-# ============================================================
+# ---------------------------------------------------------
 
-st.markdown(
-    f"""
-    <div class="header">
+st.title("⚡ Smart EV Motor Protection System")
 
-        <div class="ev">
-            <span class="green">EV</span>
-            &nbsp; SYSTEM
-        </div>
-
-        <div class="clock">
-            {current_time}
-        </div>
-
-        <div class="ready">
-            READY
-        </div>
-
-    </div>
-    """,
-    unsafe_allow_html=True
+st.caption(
+    "Real-time monitoring and protection dashboard for an electric vehicle motor"
 )
 
+st.divider()
 
-# ============================================================
-# THREE COLUMNS
-# ============================================================
+# ---------------------------------------------------------
+# DEMO SENSOR DATA
+# ---------------------------------------------------------
+# These values are currently generated for testing.
+# Later we can replace this section with ESP32 data.
 
-left, center, right = st.columns(
-    [1, 1.3, 1]
+temperature = round(random.uniform(28, 40), 1)
+voltage = round(random.uniform(44, 52), 1)
+current = round(random.uniform(3, 12), 1)
+motor_load = round(random.uniform(20, 80), 1)
+
+speed = random.randint(0, 80)
+odo = round(random.uniform(1200, 3500), 1)
+range_km = random.randint(50, 120)
+
+fan_on = temperature >= 35
+
+# ---------------------------------------------------------
+# PROTECTION LOGIC
+# ---------------------------------------------------------
+
+if temperature >= 45 or current >= 15:
+    system_status = "DANGER"
+elif temperature >= 38 or current >= 12:
+    system_status = "WARNING"
+else:
+    system_status = "NORMAL"
+
+# ---------------------------------------------------------
+# TOP STATUS
+# ---------------------------------------------------------
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown(
+        '<div class="dashboard-card">'
+        '<div class="card-title">SYSTEM</div>'
+        '<div class="card-value">⚡ EV</div>'
+        '<div class="card-unit">Motor Protection System</div>'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+with col2:
+    current_time = datetime.now().strftime("%I:%M %p")
+
+    st.markdown(
+        f'<div class="dashboard-card">'
+        f'<div class="card-title">TIME</div>'
+        f'<div class="card-value">{current_time}</div>'
+        f'<div class="card-unit">Live system time</div>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
+
+with col3:
+    if system_status == "NORMAL":
+        st.markdown(
+            '<div class="status-normal">● SYSTEM NORMAL</div>',
+            unsafe_allow_html=True
+        )
+    elif system_status == "WARNING":
+        st.markdown(
+            '<div class="status-warning">⚠ SYSTEM WARNING</div>',
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            '<div class="status-danger">⚠ MOTOR PROTECTION ACTIVE</div>',
+            unsafe_allow_html=True
+        )
+
+# ---------------------------------------------------------
+# MAIN SENSOR VALUES
+# ---------------------------------------------------------
+
+st.subheader("Live Parameters")
+
+c1, c2, c3, c4 = st.columns(4)
+
+with c1:
+    st.metric(
+        label="🌡 Temperature",
+        value=f"{temperature} °C"
+    )
+
+with c2:
+    st.metric(
+        label="🔋 Voltage",
+        value=f"{voltage} V"
+    )
+
+with c3:
+    st.metric(
+        label="⚡ Current",
+        value=f"{current} A"
+    )
+
+with c4:
+    st.metric(
+        label="⚙ Motor Load",
+        value=f"{motor_load} %"
+    )
+
+# ---------------------------------------------------------
+# MOTOR INFORMATION
+# ---------------------------------------------------------
+
+st.subheader("Motor Information")
+
+m1, m2, m3, m4 = st.columns(4)
+
+with m1:
+    st.metric(
+        label="🚗 Speed",
+        value=f"{speed} km/h"
+    )
+
+with m2:
+    st.metric(
+        label="🛣 ODO",
+        value=f"{odo} km"
+    )
+
+with m3:
+    st.metric(
+        label="🔋 Range",
+        value=f"{range_km} km"
+    )
+
+with m4:
+    fan_status = "ON" if fan_on else "OFF"
+
+    st.metric(
+        label="🌀 Cooling Fan",
+        value=fan_status
+    )
+
+# ---------------------------------------------------------
+# LOAD BAR
+# ---------------------------------------------------------
+
+st.subheader("Motor Load")
+
+st.progress(
+    min(max(int(motor_load), 0), 100),
+    text=f"Motor Load: {motor_load}%"
 )
 
+# ---------------------------------------------------------
+# TEMPERATURE / CURRENT STATUS
+# ---------------------------------------------------------
 
-# ============================================================
-# LEFT
-# ============================================================
+left, right = st.columns(2)
 
 with left:
 
-    # TEMP
+    st.markdown("### 🌡 Temperature Status")
 
-    st.markdown(
-        f"""
-        <div class="card">
-
-            <div class="title">
-                🌡️ &nbsp; TEMP
-            </div>
-
-            <div class="value blue">
-                {temperature:.2f}
-                <span style="font-size:20px">
-                °C
-                </span>
-            </div>
-
-            <div style="
-                margin-top:15px;
-                height:10px;
-                border-radius:10px;
-                background:
-                linear-gradient(
-                    90deg,
-                    #55d63a,
-                    #55d63a,
-                    #ffc400,
-                    #ff3b30
-                );
-            "></div>
-
-            <div style="
-                display:flex;
-                justify-content:space-between;
-                margin-top:5px;
-            ">
-                <span>0</span>
-                <span>60</span>
-                <span>120</span>
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-    # CURRENT
-
-    st.markdown(
-        f"""
-        <div class="card">
-
-            <div class="title">
-                ⚡ &nbsp; CURRENT
-            </div>
-
-            <div class="value yellow">
-                {current:.3f}
-                <span style="font-size:20px">
-                A
-                </span>
-            </div>
-
-            <div style="
-                margin-top:15px;
-                height:10px;
-                border-radius:10px;
-                background:
-                linear-gradient(
-                    90deg,
-                    #55d63a,
-                    #55d63a,
-                    #ffc400,
-                    #ff3b30
-                );
-            "></div>
-
-            <div style="
-                display:flex;
-                justify-content:space-between;
-                margin-top:5px;
-            ">
-                <span>0</span>
-                <span>15</span>
-                <span>30</span>
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-# ============================================================
-# CENTER
-# ============================================================
-
-with center:
-
-    # Since we don't have a speed sensor yet,
-    # show motor load percentage instead.
-
-    load_percentage = min(
-        max((current / 5.0) * 100, 0),
-        100
-    )
-
-
-    st.markdown(
-        f"""
-        <div style="
-            height:420px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-        ">
-
-            <div class="gauge">
-
-                <div class="gauge-inner">
-
-                    <div class="speed">
-                        {load_percentage:.0f}
-                    </div>
-
-                    <div class="speed-unit">
-                        LOAD %
-                    </div>
-
-                    <div class="drive">
-                        D
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-# ============================================================
-# RIGHT
-# ============================================================
+    if temperature >= 45:
+        st.error("CRITICAL TEMPERATURE")
+    elif temperature >= 38:
+        st.warning("HIGH TEMPERATURE")
+    else:
+        st.success("TEMPERATURE NORMAL")
 
 with right:
 
-    # FAN
+    st.markdown("### ⚡ Current Status")
 
-    st.markdown(
-        f"""
-        <div class="card">
+    if current >= 15:
+        st.error("OVER-CURRENT DETECTED")
+    elif current >= 12:
+        st.warning("HIGH CURRENT")
+    else:
+        st.success("CURRENT NORMAL")
 
-            <div class="title">
-                🌀 &nbsp; FAN
-            </div>
+# ---------------------------------------------------------
+# COOLING FAN
+# ---------------------------------------------------------
 
-            <div class="fan-icon">
-                🌀
-            </div>
+st.subheader("Cooling System")
 
-            <div class="fan-value green">
-                {fan_text}
-            </div>
+if fan_on:
+    st.info("🌀 Cooling Fan: ON — Temperature is above the cooling threshold.")
+else:
+    st.success("🌀 Cooling Fan: OFF — Temperature is within normal range.")
 
-            <div>
-                AUTO MODE
-            </div>
+# ---------------------------------------------------------
+# PROTECTION STATUS
+# ---------------------------------------------------------
 
-        </div>
-        """,
-        unsafe_allow_html=True
+st.subheader("Protection Status")
+
+if system_status == "NORMAL":
+
+    st.success(
+        "✓ Motor operating normally. "
+        "Temperature, current and load are within safe limits."
     )
 
+elif system_status == "WARNING":
 
-    # VOLTAGE
-
-    st.markdown(
-        f"""
-        <div class="card">
-
-            <div class="title">
-                🔋 &nbsp; VOLTAGE
-            </div>
-
-            <div class="value blue">
-                {voltage:.2f}
-                <span style="font-size:20px">
-                V
-                </span>
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True
+    st.warning(
+        "⚠ Warning condition detected. "
+        "Motor parameters should be monitored."
     )
 
+else:
 
-    # STATUS
-
-    st.markdown(
-        f"""
-        <div class="card">
-
-            <div class="title">
-                🛡️ &nbsp; STATUS
-            </div>
-
-            <div class="{status_class}">
-                {motor_status}
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True
+    st.error(
+        "🚨 Protection condition detected! "
+        "Motor may require immediate shutdown."
     )
 
+# ---------------------------------------------------------
+# SYSTEM DETAILS
+# ---------------------------------------------------------
 
-# ============================================================
-# BOTTOM BAR
-# ============================================================
+st.divider()
 
-st.markdown(
-    """
-    <div class="bottom">
+st.subheader("System Information")
 
-        <div class="green">
-            💡
-        </div>
+info1, info2, info3 = st.columns(3)
 
-        <div>
-            ODO &nbsp; <b>---</b>
-        </div>
+with info1:
+    st.write("**Controller:** ESP32")
 
-        <div>
-            RANGE &nbsp; <b>---</b>
-        </div>
+with info2:
+    st.write("**Communication:** Wi-Fi")
 
-        <div>
-            ⚠️
-        </div>
+with info3:
+    st.write("**Dashboard:** Streamlit")
 
-    </div>
-    """,
-    unsafe_allow_html=True
+# ---------------------------------------------------------
+# REFRESH
+# ---------------------------------------------------------
+
+st.divider()
+
+st.caption(
+    "Smart EV Motor Protection System • Live Monitoring Dashboard"
 )
 
-
-# ============================================================
-# EXTRA LIVE INFORMATION
-# ============================================================
-
-st.markdown(
-    f"""
-    <div style="
-        margin-top:15px;
-        text-align:center;
-        color:#8c9aa3;
-    ">
-
-        Current Trend:
-        <b>{current_trend}</b>
-        &nbsp;&nbsp; | &nbsp;&nbsp;
-
-        Temperature Trend:
-        <b>{temperature_trend}</b>
-        &nbsp;&nbsp; | &nbsp;&nbsp;
-
-        Load:
-        <b>{load_status}</b>
-
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# ============================================================
-# CLOSE DASHBOARD
-# ============================================================
-
-st.markdown(
-    '</div>',
-    unsafe_allow_html=True
-)
-
-
-# ============================================================
-# AUTO REFRESH
-# ============================================================
-
-time.sleep(1)
-
-st.rerun()
+if st.button("🔄 Refresh Data"):
+    st.rerun()
