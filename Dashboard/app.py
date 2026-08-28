@@ -19,7 +19,7 @@ st.set_page_config(
 # BACKEND URL
 # ============================================================
 
-BACKEND_URL = "YOUR_BACKEND_URL/data"
+BACKEND_URL = "https://smart-ev-motor-protection.onrender.com"
 
 
 # ============================================================
