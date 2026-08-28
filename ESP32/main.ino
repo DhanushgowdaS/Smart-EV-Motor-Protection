@@ -26,8 +26,8 @@
 // WIFI SETTINGS
 // ============================================================
 
-const char* WIFI_SSID = "YOUR_WIFI_NAME";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+const char* WIFI_SSID = "Admin";
+const char* WIFI_PASSWORD = "password";
 
 // PUT YOUR BACKEND URL HERE
 // Example:
