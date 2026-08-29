@@ -155,23 +155,8 @@ st.markdown(
         }
 
 
-        /* -------------------------------------------------- */
-        /* GEAR */
-        /* -------------------------------------------------- */
-
-        .gear-label {
-            text-align: center;
-            font-size: 20px;
-            font-weight: 700;
-            color: #FFFFFF;
-        }
-
-        .gear-value {
-            text-align: center;
-            font-size: 50px;
-            font-weight: 900;
-            color: #FFFFFF;
-        }
+       
+        
 
 
         /* -------------------------------------------------- */
