@@ -1023,7 +1023,7 @@ with right:
 
 
     voltage_percentage = min(
-        voltage / 60,
+        voltage / 12,
         1.0
     )
 
