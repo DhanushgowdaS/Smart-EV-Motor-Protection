@@ -215,7 +215,6 @@ st.divider()
 # TOP STATUS BAR
 # ============================================================
 
-# TIME MOVED SLIGHTLY TO THE RIGHT
 top_left, top_middle, top_right = st.columns(
     [4, 3.4, 4.6]
 )
@@ -320,14 +319,7 @@ with left:
         unsafe_allow_html=True
     )
 
-    st.markdown(
-        """
-        <div class="sub-heading">
-            Temperature
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    # SUBTITLE "Temperature" REMOVED
 
     st.markdown(
         f"""
@@ -364,14 +356,7 @@ with left:
         unsafe_allow_html=True
     )
 
-    st.markdown(
-        """
-        <div class="sub-heading">
-            Current
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    # SUBTITLE "Current" REMOVED
 
     st.markdown(
         f"""
@@ -894,14 +879,7 @@ with right:
         unsafe_allow_html=True
     )
 
-    st.markdown(
-        """
-        <div class="sub-heading">
-            Cooling Fan
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    # SUBTITLE "Cooling Fan" REMOVED
 
 
     if fan_on:
@@ -953,14 +931,8 @@ with right:
         unsafe_allow_html=True
     )
 
-    st.markdown(
-        """
-        <div class="sub-heading">
-            Battery Voltage
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    # SUBTITLE "Battery Voltage" REMOVED
+
 
     st.markdown(
         f"""
