@@ -60,6 +60,135 @@ else:
 
 
 # ============================================================
+# PAGE STYLE
+# ============================================================
+
+st.markdown(
+    """
+    <style>
+
+        .stApp {
+            background-color: #02070B;
+        }
+
+        [data-testid="stHeader"] {
+            background-color: #02070B;
+        }
+
+        [data-testid="stToolbar"] {
+            visibility: hidden;
+        }
+
+        .block-container {
+            padding-top: 1.5rem;
+            padding-bottom: 1rem;
+            padding-left: 3rem;
+            padding-right: 3rem;
+            max-width: 1500px;
+        }
+
+
+        /* -------------------------------------------------- */
+        /* TITLE */
+        /* -------------------------------------------------- */
+
+        .project-title {
+            text-align: center;
+            white-space: nowrap;
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #F5F5F5;
+            margin-bottom: 5px;
+        }
+
+
+        /* -------------------------------------------------- */
+        /* TOP BAR */
+        /* -------------------------------------------------- */
+
+        .ready-text {
+            font-size: 30px;
+            font-weight: 800;
+            color: #FFFFFF;
+        }
+
+        .clock-text {
+            font-size: 30px;
+            font-weight: 800;
+            text-align: center;
+            color: #FFFFFF;
+        }
+
+        .status-text {
+            font-size: 30px;
+            font-weight: 800;
+            text-align: right;
+            color: #FFFFFF;
+        }
+
+
+        /* -------------------------------------------------- */
+        /* SECTION HEADINGS */
+        /* -------------------------------------------------- */
+
+        .section-heading {
+            font-size: 25px;
+            font-weight: 800;
+            color: #F5F5F5;
+            margin-top: 8px;
+        }
+
+        .sub-heading {
+            font-size: 19px;
+            font-weight: 600;
+            color: #FFFFFF;
+            margin-top: 10px;
+        }
+
+        .big-value {
+            font-size: 38px;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+
+
+        /* -------------------------------------------------- */
+        /* GEAR */
+        /* -------------------------------------------------- */
+
+        .gear-label {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        .gear-value {
+            text-align: center;
+            font-size: 50px;
+            font-weight: 900;
+            color: #FFFFFF;
+        }
+
+
+        /* -------------------------------------------------- */
+        /* REMOVE EXTRA STREAMLIT SPACE */
+        /* -------------------------------------------------- */
+
+        div[data-testid="stVerticalBlock"] > div {
+            gap: 0.25rem;
+        }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# ============================================================
 # SMALL TOP SPACE
 # ============================================================
 
@@ -70,13 +199,14 @@ st.write("")
 # PROJECT TITLE
 # ============================================================
 
-title_col = st.columns([1, 8, 1])
-
-with title_col[1]:
-    st.markdown(
-        "## ⚡ SMART EV MOTOR PROTECTION SYSTEM"
-    )
-
+st.markdown(
+    """
+    <div class="project-title">
+        ⚡ SMART EV MOTOR PROTECTION SYSTEM
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 st.divider()
 
@@ -85,6 +215,7 @@ st.divider()
 # TOP STATUS BAR
 # ============================================================
 
+# TIME MOVED SLIGHTLY TO THE RIGHT
 top_left, top_middle, top_right = st.columns(
     [4, 3.4, 4.6]
 )
@@ -92,13 +223,17 @@ top_left, top_middle, top_right = st.columns(
 
 # ============================================================
 # READY
-# SAME SIZE AS TIME
 # ============================================================
 
 with top_left:
 
     st.markdown(
-        "### 🟢 READY"
+        """
+        <div class="ready-text">
+            🟢 READY
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 
@@ -109,41 +244,49 @@ with top_left:
 with top_middle:
 
     st.markdown(
-        f"### {current_time}"
+        f"""
+        <div class="clock-text">
+            {current_time}
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 
 # ============================================================
 # STATUS
-# SAME SIZE AS TIME
-# MOVED MORE TO THE RIGHT
 # ============================================================
 
 with top_right:
 
-    status_space, status_col = st.columns(
-        [1, 4]
+    if system_status == "NORMAL":
+
+        status_html = """
+        <div class="status-text">
+            🟢 STATUS: NORMAL
+        </div>
+        """
+
+    elif system_status == "WARNING":
+
+        status_html = """
+        <div class="status-text">
+            🟠 STATUS: WARNING
+        </div>
+        """
+
+    else:
+
+        status_html = """
+        <div class="status-text">
+            🔴 STATUS: CRITICAL
+        </div>
+        """
+
+    st.markdown(
+        status_html,
+        unsafe_allow_html=True
     )
-
-    with status_col:
-
-        if system_status == "NORMAL":
-
-            st.markdown(
-                "### 🟢 STATUS: NORMAL"
-            )
-
-        elif system_status == "WARNING":
-
-            st.markdown(
-                "### 🟠 STATUS: WARNING"
-            )
-
-        else:
-
-            st.markdown(
-                "### 🔴 STATUS: CRITICAL"
-            )
 
 
 st.divider()
@@ -169,15 +312,30 @@ with left:
     # ========================================================
 
     st.markdown(
-        "### 🌡️ TEMPERATURE"
+        """
+        <div class="section-heading">
+            🌡️ TEMPERATURE
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    st.write(
-        "Temperature"
+    st.markdown(
+        """
+        <div class="sub-heading">
+            Temperature
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    st.subheader(
-        f"{temperature} °C"
+    st.markdown(
+        f"""
+        <div class="big-value">
+            {temperature} °C
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
     temperature_percentage = min(
@@ -198,15 +356,30 @@ with left:
     # ========================================================
 
     st.markdown(
-        "### ⚡ CURRENT"
+        """
+        <div class="section-heading">
+            ⚡ CURRENT
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    st.write(
-        "Current"
+    st.markdown(
+        """
+        <div class="sub-heading">
+            Current
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    st.subheader(
-        f"{current} A"
+    st.markdown(
+        f"""
+        <div class="big-value">
+            {current} A
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
     current_percentage = min(
@@ -226,23 +399,13 @@ with left:
 
 with center:
 
-    # --------------------------------------------------------
-    # SPEED RANGE
-    # --------------------------------------------------------
-
     min_speed = 0
     max_speed = 100
 
 
-    # --------------------------------------------------------
+    # ========================================================
     # GAUGE GEOMETRY
-    #
-    # 240 DEGREE AUTOMOTIVE STYLE GAUGE
-    #
-    # LEFT  = 0
-    # TOP   = 50
-    # RIGHT = 100
-    # --------------------------------------------------------
+    # ========================================================
 
     start_angle = 210
     end_angle = -30
@@ -417,15 +580,6 @@ with center:
 
     # ========================================================
     # WHITE TICK MARKS
-    #
-    # BIG
-    # SMALL
-    # BIG
-    # SMALL
-    #
-    # EVERY 5 KM/H
-    # BIG TICK = 10 KM/H
-    # SMALL TICK = 5 KM/H
     # ========================================================
 
     for value in range(
@@ -489,12 +643,7 @@ with center:
 
 
     # ========================================================
-    # NUMBER LABELS
-    #
-    # ONLY:
-    # 0
-    # 50
-    # 100
+    # ONLY 0, 50 AND 100 LABELS
     # ========================================================
 
     label_values = [
@@ -708,11 +857,21 @@ with center:
     with gear_col[1]:
 
         st.markdown(
-            "### GEAR"
+            """
+            <div class="gear-label">
+                GEAR
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
         st.markdown(
-            f"# {gear}"
+            f"""
+            <div class="gear-value">
+                {gear}
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
 
@@ -727,29 +886,54 @@ with right:
     # ========================================================
 
     st.markdown(
-        "### 🌀 FAN"
+        """
+        <div class="section-heading">
+            🌀 FAN
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    st.write(
-        "Cooling Fan"
+    st.markdown(
+        """
+        <div class="sub-heading">
+            Cooling Fan
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 
     if fan_on:
 
-        st.subheader(
-            "ON"
+        st.markdown(
+            """
+            <div class="big-value">
+                ON
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
     else:
 
-        st.subheader(
-            "OFF"
+        st.markdown(
+            """
+            <div class="big-value">
+                OFF
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
 
-    st.write(
-        fan_mode
+    st.markdown(
+        f"""
+        <div class="sub-heading">
+            {fan_mode}
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 
@@ -761,15 +945,30 @@ with right:
     # ========================================================
 
     st.markdown(
-        "### 🔋 VOLTAGE"
+        """
+        <div class="section-heading">
+            🔋 VOLTAGE
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    st.write(
-        "Battery Voltage"
+    st.markdown(
+        """
+        <div class="sub-heading">
+            Battery Voltage
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    st.subheader(
-        f"{voltage} V"
+    st.markdown(
+        f"""
+        <div class="big-value">
+            {voltage} V
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 
