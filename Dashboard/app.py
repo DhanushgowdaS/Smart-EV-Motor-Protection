@@ -2,6 +2,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from datetime import datetime
 from zoneinfo import ZoneInfo
+import time
 
 
 # ============================================================
@@ -9,7 +10,7 @@ from zoneinfo import ZoneInfo
 # ============================================================
 
 st.set_page_config(
-    page_title="EV System",
+    page_title="Smart EV Motor Protection System",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -17,268 +18,303 @@ st.set_page_config(
 
 
 # ============================================================
+# REAL-TIME DATA
+# ============================================================
+
+# India Standard Time
+india_time = datetime.now(ZoneInfo("Asia/Kolkata"))
+
+current_time = india_time.strftime("%I:%M %p")
+current_date = india_time.strftime("%d-%m-%Y")
+
+
+# ============================================================
 # EV DATA
 # ============================================================
 
-temperature = 42.0
+temperature = 42
 current = 2.6
 voltage = 48.6
-
 speed = 45
+
 gear = "D"
 
 odo = 1256
 range_km = 78
 
-fan_status = "ON"
+fan_on = True
 fan_mode = "AUTO MODE"
 
-system_status = "NORMAL"
-vehicle_status = "READY"
+# System status
+if temperature >= 70:
+    system_status = "CRITICAL"
+elif temperature >= 55:
+    system_status = "WARNING"
+else:
+    system_status = "NORMAL"
+
+ready_status = "READY"
 
 
 # ============================================================
-# REAL-TIME CLOCK
+# TITLE
 # ============================================================
 
-@st.fragment(run_every="1s")
-def live_clock():
-
-    india_time = datetime.now(
-        ZoneInfo("Asia/Kolkata")
-    )
-
-    current_time = india_time.strftime("%I:%M %p")
-
-    st.markdown(
-        f"### {current_time}"
-    )
-
-
-# ============================================================
-# TITLE BAR
-# ============================================================
-
-title_col, clock_col, ready_col = st.columns(
-    [2.2, 1.2, 2.2]
+st.markdown(
+    """
+    # ⚡ SMART EV MOTOR PROTECTION SYSTEM
+    """
 )
-
-with title_col:
-    st.title("EV SYSTEM")
-
-with clock_col:
-    live_clock()
-
-with ready_col:
-    st.success(vehicle_status)
-
 
 st.divider()
 
 
 # ============================================================
-# SPEEDOMETER
+# TOP STATUS BAR
 # ============================================================
 
-def create_speedometer(value):
+top_left, top_middle, top_right = st.columns([4, 3, 4])
 
-    gauge = go.Figure(
-        go.Indicator(
-            mode="gauge+number",
-            value=value,
 
-            number={
-                "font": {
-                    "size": 55,
-                    "color": "white"
-                },
-                "suffix": ""
-            },
+with top_left:
+    st.markdown("### 🟢 READY")
 
-            gauge={
-                "axis": {
-                    "range": [0, 100],
-                    "tickmode": "array",
-                    "tickvals": [
-                        0,
-                        25,
-                        50,
-                        75,
-                        100
-                    ],
-                    "ticktext": [
-                        "0",
-                        "25",
-                        "50",
-                        "75",
-                        "100"
-                    ],
-                    "tickfont": {
-                        "size": 14,
-                        "color": "white"
-                    }
-                },
 
-                "bar": {
-                    "color": "#7CFC00",
-                    "thickness": 0.35
-                },
-
-                "bgcolor": "#101820",
-
-                "borderwidth": 0,
-
-                "steps": [
-                    {
-                        "range": [0, 25],
-                        "color": "#8BEF42"
-                    },
-                    {
-                        "range": [25, 50],
-                        "color": "#C9F77F"
-                    },
-                    {
-                        "range": [50, 75],
-                        "color": "#49BCEB"
-                    },
-                    {
-                        "range": [75, 100],
-                        "color": "#5B6570"
-                    }
-                ]
-            }
-        )
+with top_middle:
+    st.markdown(
+        f"<h2 style='text-align:center;'>{current_time}</h2>",
+        unsafe_allow_html=True
     )
 
-    gauge.update_layout(
-        height=390,
-        margin=dict(
-            l=20,
-            r=20,
-            t=25,
-            b=10
-        ),
 
-        paper_bgcolor="#0B1117",
-
-        font={
-            "color": "white"
-        }
+with top_right:
+    st.markdown(
+        f"<h3 style='text-align:right;'>STATUS: {system_status}</h3>",
+        unsafe_allow_html=True
     )
 
-    return gauge
+
+st.divider()
 
 
 # ============================================================
 # MAIN DASHBOARD
 # ============================================================
 
-left_col, center_col, right_col = st.columns(
-    [1.05, 2.15, 1.30]
-)
+left, center, right = st.columns([3, 5, 3])
 
 
 # ============================================================
-# LEFT INFORMATION
+# LEFT SIDE - TEMPERATURE
 # ============================================================
 
-with left_col:
+with left:
 
-    st.subheader("🌡️ TEMPERATURE")
+    st.markdown("## 🌡️ TEMPERATURE")
 
-    st.metric(
-        label="Temperature",
-        value=f"{temperature:.0f} °C"
+    st.markdown("### Temperature")
+
+    st.markdown(
+        f"# {temperature} °C"
     )
 
-    st.progress(
-        min(temperature / 80, 1.0)
-    )
+    # Temperature progress
+    temperature_percentage = min(temperature / 100, 1.0)
+
+    st.progress(temperature_percentage)
+
+    st.write("")
 
     st.divider()
 
-    st.subheader("⚡ CURRENT")
+    # CURRENT
 
-    st.metric(
-        label="Motor Current",
-        value=f"{current:.1f} A"
+    st.markdown("## ⚡ CURRENT")
+
+    st.markdown("### Current")
+
+    st.markdown(
+        f"# {current} A"
     )
 
-    st.progress(
-        min(current / 10, 1.0)
-    )
+    current_percentage = min(current / 10, 1.0)
+
+    st.progress(current_percentage)
 
 
 # ============================================================
-# CENTER SPEEDOMETER
+# CENTER - SPEED GAUGE
 # ============================================================
 
-with center_col:
+with center:
+
+    st.markdown("")
+
+    # --------------------------------------------------------
+    # SPEED GAUGE
+    # --------------------------------------------------------
+
+    gauge = go.Figure(
+        go.Indicator(
+            mode="gauge+number",
+            value=speed,
+
+            number={
+                "font": {
+                    "size": 48
+                }
+            },
+
+            title={
+                "text": "km/h",
+                "font": {
+                    "size": 18
+                }
+            },
+
+            gauge={
+                "axis": {
+                    "range": [0, 100],
+                    "tickmode": "array",
+                    "tickvals": [0, 25, 50, 75, 100],
+                    "ticktext": ["0", "25", "50", "75", "100"]
+                },
+
+                "bar": {
+                    "thickness": 0.25
+                },
+
+                "steps": [
+                    {
+                        "range": [0, 50],
+                        "color": "#8CFF00"
+                    },
+                    {
+                        "range": [50, 75],
+                        "color": "#66D9EF"
+                    },
+                    {
+                        "range": [75, 100],
+                        "color": "#808080"
+                    }
+                ],
+
+                "threshold": {
+                    "line": {
+                        "width": 5
+                    },
+                    "thickness": 0.75,
+                    "value": speed
+                }
+            }
+        )
+    )
+
+    gauge.update_layout(
+        height=430,
+        margin=dict(
+            l=20,
+            r=20,
+            t=30,
+            b=10
+        ),
+
+        paper_bgcolor="rgba(0,0,0,0)",
+
+        font={
+            "color": "white"
+        }
+    )
 
     st.plotly_chart(
-        create_speedometer(speed),
+        gauge,
         use_container_width=True,
         config={
             "displayModeBar": False
         }
     )
 
+    # --------------------------------------------------------
+    # SPEED / GEAR
+    # --------------------------------------------------------
+
     speed_col, gear_col = st.columns(2)
 
     with speed_col:
 
-        st.metric(
-            label="SPEED",
-            value=f"{speed} km/h"
+        st.markdown("### SPEED")
+
+        st.markdown(
+            f"# {speed} km/h"
         )
 
     with gear_col:
 
-        st.metric(
-            label="GEAR",
-            value=gear
+        st.markdown("### GEAR")
+
+        st.markdown(
+            f"# {gear}"
         )
 
 
 # ============================================================
-# RIGHT INFORMATION
+# RIGHT SIDE
 # ============================================================
 
-with right_col:
+with right:
 
-    st.subheader("🌀 FAN")
+    # --------------------------------------------------------
+    # FAN
+    # --------------------------------------------------------
 
-    st.metric(
-        label="Cooling Fan",
-        value=fan_status
+    st.markdown("## 🌀 FAN")
+
+    st.markdown("### Cooling Fan")
+
+    if fan_on:
+        st.markdown(
+            "# ON"
+        )
+    else:
+        st.markdown(
+            "# OFF"
+        )
+
+    st.markdown(
+        f"**{fan_mode}**"
     )
-
-    st.caption(fan_mode)
 
     st.divider()
 
-    st.subheader("🔋 VOLTAGE")
+    # --------------------------------------------------------
+    # VOLTAGE
+    # --------------------------------------------------------
 
-    st.metric(
-        label="Battery Voltage",
-        value=f"{voltage:.1f} V"
+    st.markdown("## 🔋 VOLTAGE")
+
+    st.markdown("### Battery Voltage")
+
+    st.markdown(
+        f"# {voltage} V"
     )
 
-    st.divider()
+    voltage_percentage = min(voltage / 60, 1.0)
 
-    st.subheader("🛡️ STATUS")
-
-    st.success(system_status)
+    st.progress(voltage_percentage)
 
 
 # ============================================================
-# BOTTOM INFORMATION
+# LOWER INFORMATION SECTION
 # ============================================================
 
 st.divider()
 
-bottom_left, bottom_center, bottom_right = st.columns(
-    [1.15, 1.15, 1.15]
+# IMPORTANT:
+# ODO and RANGE are intentionally placed more toward the right.
+# This prevents them from appearing too close to SPEED / GEAR.
+
+empty_col, odo_col, range_col, empty_right = st.columns(
+    [2, 3, 3, 2]
 )
 
 
@@ -286,13 +322,12 @@ bottom_left, bottom_center, bottom_right = st.columns(
 # ODOMETER
 # ============================================================
 
-with bottom_left:
+with odo_col:
 
-    st.subheader("💡 ODO")
+    st.markdown("## 💡 ODO")
 
-    st.metric(
-        label="Total Distance",
-        value=f"{odo} km"
+    st.markdown(
+        f"# {odo} km"
     )
 
 
@@ -300,39 +335,30 @@ with bottom_left:
 # RANGE
 # ============================================================
 
-with bottom_center:
+with range_col:
 
-    st.subheader("🛣️ RANGE")
+    st.markdown("## 🛣️ RANGE")
 
-    st.metric(
-        label="Estimated Range",
-        value=f"{range_km} km"
+    st.markdown(
+        f"# {range_km} km"
     )
-
-
-# ============================================================
-# SYSTEM
-# ============================================================
-
-with bottom_right:
-
-    st.subheader("⚠️ SYSTEM")
-
-    st.success(system_status)
 
 
 # ============================================================
 # LAST UPDATED
 # ============================================================
 
-india_time = datetime.now(
-    ZoneInfo("Asia/Kolkata")
-)
-
-last_updated = india_time.strftime(
-    "%d-%m-%Y %I:%M:%S %p"
-)
+st.divider()
 
 st.caption(
-    f"Last updated: {last_updated}"
+    f"Last updated: {current_date} {current_time}"
 )
+
+
+# ============================================================
+# AUTO REFRESH
+# ============================================================
+
+time.sleep(1)
+
+st.rerun()
