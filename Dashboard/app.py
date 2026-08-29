@@ -42,11 +42,8 @@ else:
     fan_on = bool(data.get("fan", False))
     system_on = bool(data.get("system", False))
     system_status = data.get("status", "NORMAL")
-
-    # Speed comes directly from ESP32
     speed = float(data.get("speed", 0.0))
 
-    # Keep speed inside gauge range
     speed = max(0.0, min(speed, 100.0))
 
 odo = 1256
@@ -54,12 +51,14 @@ range_km = 78
 fan_mode = "AUTO MODE"
 
 india_time = datetime.now(ZoneInfo("Asia/Kolkata"))
+
 current_time = india_time.strftime("%I:%M %p")
 current_date = india_time.strftime("%d-%m-%Y")
 
 st.markdown(
     """
     <style>
+
         .stApp {
             background-color: #02070B;
         }
@@ -135,6 +134,7 @@ st.markdown(
         div[data-testid="stVerticalBlock"] > div {
             gap: 0.25rem;
         }
+
     </style>
     """,
     unsafe_allow_html=True
@@ -153,9 +153,12 @@ st.markdown(
 
 st.divider()
 
-top_left, top_middle, top_right = st.columns([4, 3.4, 4.6])
+top_left, top_middle, top_right = st.columns(
+    [4, 3.4, 4.6]
+)
 
 with top_left:
+
     if system_on:
         ready_text = "🟢 READY"
     else:
@@ -171,6 +174,7 @@ with top_left:
     )
 
 with top_middle:
+
     st.markdown(
         f"""
         <div class="clock-text">
@@ -181,46 +185,64 @@ with top_middle:
     )
 
 with top_right:
+
     if system_status == "NORMAL":
+
         status_html = """
         <div class="status-text">
-            🟢 STATUS: NORMAL
+            <span style="color:#49E600;">
+                🟢 STATUS: NORMAL
+            </span>
         </div>
         """
+
     elif system_status == "WARNING":
+
         status_html = """
         <div class="status-text">
-            🟠 STATUS: WARNING
+            <span style="color:#FF0000;">
+                🔴 STATUS: WARNING
+            </span>
         </div>
         """
+
     elif system_status == "CRITICAL":
+
         status_html = """
         <div class="status-text">
-            🔴 STATUS: CRITICAL
+            <span style="color:#FF0000;">
+                🔴 STATUS: CRITICAL
+            </span>
         </div>
         """
-    elif system_status == "WARNING":
-        status_html = """
-        <div class="status-text">
-            🔵 STATUS: WARNING
-        </div>
-        """
+
     elif system_status == "LOAD RISING":
+
         status_html = """
         <div class="status-text">
-            🟠 STATUS: LOAD RISING
+            <span style="color:#FF0000;">
+                🔴 STATUS: LOAD RISING
+            </span>
         </div>
         """
+
     elif system_status == "NOT CONNECTED":
+
         status_html = """
         <div class="status-text">
-            🔴 STATUS: NOT CONNECTED
+            <span style="color:#FF0000;">
+                🔴 STATUS: NOT CONNECTED
+            </span>
         </div>
         """
+
     else:
+
         status_html = f"""
         <div class="status-text">
-            🟢 STATUS: {system_status}
+            <span style="color:#FFFFFF;">
+                STATUS: {system_status}
+            </span>
         </div>
         """
 
@@ -231,7 +253,9 @@ with top_right:
 
 st.divider()
 
-left, center, right = st.columns([3, 5, 3])
+left, center, right = st.columns(
+    [3, 5, 3]
+)
 
 with left:
 
@@ -254,11 +278,13 @@ with left:
     )
 
     temperature_percentage = min(
-        temperature / 100,
+        max(temperature / 100, 0.0),
         1.0
     )
 
-    st.progress(temperature_percentage)
+    st.progress(
+        temperature_percentage
+    )
 
     st.divider()
 
@@ -281,11 +307,13 @@ with left:
     )
 
     current_percentage = min(
-        current / 10,
+        max(current / 10, 0.0),
         1.0
     )
 
-    st.progress(current_percentage)
+    st.progress(
+        current_percentage
+    )
 
 with center:
 
@@ -299,6 +327,7 @@ with center:
     inner_radius = 0.72
 
     def speed_to_angle(value):
+
         fraction = (
             value - min_speed
         ) / (
@@ -312,7 +341,11 @@ with center:
             )
         )
 
-    def polar_to_xy(radius, angle):
+    def polar_to_xy(
+        radius,
+        angle
+    ):
+
         radians = math.radians(angle)
 
         x = radius * math.cos(radians)
@@ -325,13 +358,19 @@ with center:
         end_value,
         color
     ):
+
         points = 50
 
         outer_points = []
         inner_points = []
 
-        start = speed_to_angle(start_value)
-        end = speed_to_angle(end_value)
+        start = speed_to_angle(
+            start_value
+        )
+
+        end = speed_to_angle(
+            end_value
+        )
 
         for i in range(points + 1):
 
@@ -344,14 +383,18 @@ with center:
                 angle
             )
 
-            outer_points.append((x, y))
+            outer_points.append(
+                (x, y)
+            )
 
             x, y = polar_to_xy(
                 inner_radius,
                 angle
             )
 
-            inner_points.append((x, y))
+            inner_points.append(
+                (x, y)
+            )
 
         polygon = (
             outer_points
@@ -408,15 +451,24 @@ with center:
         )
     )
 
-    for value in range(0, 101, 5):
+    for value in range(
+        0,
+        101,
+        5
+    ):
 
-        angle = speed_to_angle(value)
+        angle = speed_to_angle(
+            value
+        )
 
         if value % 10 == 0:
+
             tick_outer = 1.17
             tick_inner = 1.02
             tick_width = 6
+
         else:
+
             tick_outer = 1.14
             tick_inner = 1.04
             tick_width = 4
@@ -433,8 +485,14 @@ with center:
 
         speedometer.add_trace(
             go.Scatter(
-                x=[x1, x2],
-                y=[y1, y2],
+                x=[
+                    x1,
+                    x2
+                ],
+                y=[
+                    y1,
+                    y2
+                ],
                 mode="lines",
                 line={
                     "color": "#FFFFFF",
@@ -445,9 +503,15 @@ with center:
             )
         )
 
-    for value in [0, 50, 100]:
+    for value in [
+        0,
+        50,
+        100
+    ]:
 
-        angle = speed_to_angle(value)
+        angle = speed_to_angle(
+            value
+        )
 
         label_radius = 1.31
 
@@ -457,20 +521,27 @@ with center:
         )
 
         speedometer.add_annotation(
+
             x=x,
             y=y,
+
             text=str(value),
+
             showarrow=False,
+
             font={
                 "size": 22,
                 "color": "#FFFFFF",
                 "family": "Arial"
             },
+
             xanchor="center",
             yanchor="middle"
         )
 
-    speed_angle = speed_to_angle(speed)
+    speed_angle = speed_to_angle(
+        speed
+    )
 
     indicator_outer = 1.00
     indicator_inner = 0.74
@@ -487,74 +558,112 @@ with center:
 
     speedometer.add_trace(
         go.Scatter(
-            x=[x1, x2],
-            y=[y1, y2],
+
+            x=[
+                x1,
+                x2
+            ],
+
+            y=[
+                y1,
+                y2
+            ],
+
             mode="lines",
+
             line={
                 "color": "#FFFFFF",
                 "width": 7
             },
+
             hoverinfo="skip",
             showlegend=False
         )
     )
 
     speedometer.add_annotation(
+
         x=0,
         y=0.04,
+
         text=f"{speed:.0f}",
+
         showarrow=False,
+
         font={
             "size": 76,
             "color": "#FFFFFF",
             "family": "Arial"
         },
+
         xanchor="center",
         yanchor="middle"
     )
 
     speedometer.add_annotation(
+
         x=0,
         y=-0.25,
+
         text="km/h",
+
         showarrow=False,
+
         font={
             "size": 25,
             "color": "#FFFFFF",
             "family": "Arial"
         },
+
         xanchor="center",
         yanchor="middle"
     )
 
     speedometer.update_layout(
+
         height=470,
+
         margin={
             "l": 10,
             "r": 10,
             "t": 10,
             "b": 5
         },
+
         paper_bgcolor="rgba(0,0,0,0)",
+
         plot_bgcolor="rgba(0,0,0,0)",
+
         showlegend=False,
+
         xaxis={
             "visible": False,
-            "range": [-1.45, 1.45],
+            "range": [
+                -1.45,
+                1.45
+            ],
             "fixedrange": True
         },
+
         yaxis={
             "visible": False,
-            "range": [-1.40, 1.40],
+            "range": [
+                -1.40,
+                1.40
+            ],
             "fixedrange": True,
+
             "scaleanchor": "x",
             "scaleratio": 1
         }
     )
 
     st.plotly_chart(
+
         speedometer,
+
         use_container_width=True,
+
         config={
             "displayModeBar": False,
             "staticPlot": True
@@ -573,6 +682,7 @@ with right:
     )
 
     if fan_on:
+
         st.markdown(
             """
             <div class="big-value">
@@ -581,7 +691,9 @@ with right:
             """,
             unsafe_allow_html=True
         )
+
     else:
+
         st.markdown(
             """
             <div class="big-value">
@@ -620,13 +732,14 @@ with right:
         unsafe_allow_html=True
     )
 
-    # Dashboard scale: 0-12 V
     voltage_percentage = min(
         max(voltage / 12, 0.0),
         1.0
     )
 
-    st.progress(voltage_percentage)
+    st.progress(
+        voltage_percentage
+    )
 
 st.divider()
 
@@ -635,12 +748,24 @@ empty_left, empty_middle, odo_col, range_col = st.columns(
 )
 
 with odo_col:
-    st.markdown("## 💡 ODO")
-    st.markdown(f"# {odo} km")
+
+    st.markdown(
+        "## 💡 ODO"
+    )
+
+    st.markdown(
+        f"# {odo} km"
+    )
 
 with range_col:
-    st.markdown("## 🛣️ RANGE")
-    st.markdown(f"# {range_km} km")
+
+    st.markdown(
+        "## 🛣️ RANGE"
+    )
+
+    st.markdown(
+        f"# {range_km} km"
+    )
 
 st.divider()
 
@@ -648,6 +773,6 @@ st.caption(
     f"Last updated: {current_date} {current_time}"
 )
 
-# Refresh every 500 ms
-time.sleep(0.1)
+time.sleep(0.5)
+
 st.rerun()
