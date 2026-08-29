@@ -36,7 +36,6 @@ current = 2.6
 voltage = 48.6
 
 speed = 45
-gear = "D"
 
 odo = 1256
 range_km = 78
@@ -50,12 +49,15 @@ fan_mode = "AUTO MODE"
 # ============================================================
 
 if temperature >= 70:
+
     system_status = "CRITICAL"
 
 elif temperature >= 55:
+
     system_status = "WARNING"
 
 else:
+
     system_status = "NORMAL"
 
 
@@ -67,105 +69,29 @@ st.markdown(
     """
     <style>
 
-        .stApp {
-            background-color: #02070B;
-        }
+    .stApp {
+        background-color: #02070B;
+    }
 
-        [data-testid="stHeader"] {
-            background-color: #02070B;
-        }
+    [data-testid="stHeader"] {
+        background-color: #02070B;
+    }
 
-        [data-testid="stToolbar"] {
-            visibility: hidden;
-        }
+    [data-testid="stToolbar"] {
+        visibility: hidden;
+    }
 
-        .block-container {
-            padding-top: 1.5rem;
-            padding-bottom: 1rem;
-            padding-left: 3rem;
-            padding-right: 3rem;
-            max-width: 1500px;
-        }
+    .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 1rem;
+        padding-left: 3rem;
+        padding-right: 3rem;
+        max-width: 1500px;
+    }
 
-
-        /* -------------------------------------------------- */
-        /* TITLE */
-        /* -------------------------------------------------- */
-
-        .project-title {
-            text-align: center;
-            white-space: nowrap;
-            font-size: 36px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            color: #F5F5F5;
-            margin-bottom: 5px;
-        }
-
-
-        /* -------------------------------------------------- */
-        /* TOP BAR */
-        /* -------------------------------------------------- */
-
-        .ready-text {
-            font-size: 30px;
-            font-weight: 800;
-            color: #FFFFFF;
-        }
-
-        .clock-text {
-            font-size: 30px;
-            font-weight: 800;
-            text-align: center;
-            color: #FFFFFF;
-        }
-
-        .status-text {
-            font-size: 30px;
-            font-weight: 800;
-            text-align: right;
-            color: #FFFFFF;
-        }
-
-
-        /* -------------------------------------------------- */
-        /* SECTION HEADINGS */
-        /* -------------------------------------------------- */
-
-        .section-heading {
-            font-size: 25px;
-            font-weight: 800;
-            color: #F5F5F5;
-            margin-top: 8px;
-        }
-
-        .sub-heading {
-            font-size: 19px;
-            font-weight: 600;
-            color: #FFFFFF;
-            margin-top: 10px;
-        }
-
-        .big-value {
-            font-size: 38px;
-            font-weight: 800;
-            color: #FFFFFF;
-            margin-top: 5px;
-            margin-bottom: 10px;
-        }
-
-
-       
-        
-
-
-        /* -------------------------------------------------- */
-        /* REMOVE EXTRA STREAMLIT SPACE */
-        /* -------------------------------------------------- */
-
-        div[data-testid="stVerticalBlock"] > div {
-            gap: 0.25rem;
-        }
+    div[data-testid="stVerticalBlock"] > div {
+        gap: 0.25rem;
+    }
 
     </style>
     """,
@@ -184,14 +110,7 @@ st.write("")
 # PROJECT TITLE
 # ============================================================
 
-st.markdown(
-    """
-    <div class="project-title">
-        ⚡ SMART EV MOTOR PROTECTION SYSTEM
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.title("⚡ SMART EV MOTOR PROTECTION SYSTEM")
 
 st.divider()
 
@@ -201,7 +120,7 @@ st.divider()
 # ============================================================
 
 top_left, top_middle, top_right = st.columns(
-    [4, 3.4, 4.6]
+    [4, 3, 5]
 )
 
 
@@ -211,14 +130,7 @@ top_left, top_middle, top_right = st.columns(
 
 with top_left:
 
-    st.markdown(
-        """
-        <div class="ready-text">
-            🟢 READY
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    st.subheader("🟢 READY")
 
 
 # ============================================================
@@ -227,14 +139,7 @@ with top_left:
 
 with top_middle:
 
-    st.markdown(
-        f"""
-        <div class="clock-text">
-            {current_time}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    st.subheader(current_time)
 
 
 # ============================================================
@@ -245,32 +150,15 @@ with top_right:
 
     if system_status == "NORMAL":
 
-        status_html = """
-        <div class="status-text">
-            🟢 STATUS: NORMAL
-        </div>
-        """
+        st.subheader("🟢 STATUS: NORMAL")
 
     elif system_status == "WARNING":
 
-        status_html = """
-        <div class="status-text">
-            🟠 STATUS: WARNING
-        </div>
-        """
+        st.subheader("🟠 STATUS: WARNING")
 
     else:
 
-        status_html = """
-        <div class="status-text">
-            🔴 STATUS: CRITICAL
-        </div>
-        """
-
-    st.markdown(
-        status_html,
-        unsafe_allow_html=True
-    )
+        st.subheader("🔴 STATUS: CRITICAL")
 
 
 st.divider()
@@ -292,74 +180,50 @@ left, center, right = st.columns(
 with left:
 
     # ========================================================
-    # TEMPERATURE
+    # TEMPERATURE BOX
     # ========================================================
 
-    st.markdown(
-        """
-        <div class="section-heading">
-            🌡️ TEMPERATURE
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    with st.container(border=True):
 
-    # SUBTITLE "Temperature" REMOVED
+        st.subheader("🌡️ TEMPERATURE")
 
-    st.markdown(
-        f"""
-        <div class="big-value">
-            {temperature} °C
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+        st.markdown(
+            f"### {temperature} °C"
+        )
 
-    temperature_percentage = min(
-        temperature / 100,
-        1.0
-    )
+        temperature_percentage = min(
+            temperature / 100,
+            1.0
+        )
 
-    st.progress(
-        temperature_percentage
-    )
+        st.progress(
+            temperature_percentage
+        )
 
 
-    st.divider()
+    st.write("")
 
 
     # ========================================================
-    # CURRENT
+    # CURRENT BOX
     # ========================================================
 
-    st.markdown(
-        """
-        <div class="section-heading">
-            ⚡ CURRENT
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    with st.container(border=True):
 
-    # SUBTITLE "Current" REMOVED
+        st.subheader("⚡ CURRENT")
 
-    st.markdown(
-        f"""
-        <div class="big-value">
-            {current} A
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+        st.markdown(
+            f"### {current} A"
+        )
 
-    current_percentage = min(
-        current / 10,
-        1.0
-    )
+        current_percentage = min(
+            current / 10,
+            1.0
+        )
 
-    st.progress(
-        current_percentage
-    )
+        st.progress(
+            current_percentage
+        )
 
 
 # ============================================================
@@ -369,13 +233,17 @@ with left:
 
 with center:
 
+    # --------------------------------------------------------
+    # SPEED RANGE
+    # --------------------------------------------------------
+
     min_speed = 0
     max_speed = 100
 
 
-    # ========================================================
+    # --------------------------------------------------------
     # GAUGE GEOMETRY
-    # ========================================================
+    # --------------------------------------------------------
 
     start_angle = 210
     end_angle = -30
@@ -508,7 +376,6 @@ with center:
 
     # ========================================================
     # GREEN SECTION
-    # 0 - 40
     # ========================================================
 
     speedometer.add_trace(
@@ -522,7 +389,6 @@ with center:
 
     # ========================================================
     # BLUE SECTION
-    # 40 - 55
     # ========================================================
 
     speedometer.add_trace(
@@ -536,7 +402,6 @@ with center:
 
     # ========================================================
     # DARK SECTION
-    # 55 - 100
     # ========================================================
 
     speedometer.add_trace(
@@ -561,7 +426,6 @@ with center:
         angle = speed_to_angle(
             value
         )
-
 
         if value % 10 == 0:
 
@@ -613,7 +477,7 @@ with center:
 
 
     # ========================================================
-    # ONLY 0, 50 AND 100 LABELS
+    # ONLY 0, 50, 100 LABELS
     # ========================================================
 
     label_values = [
@@ -816,8 +680,6 @@ with center:
     )
 
 
-   
-
 # ============================================================
 # RIGHT SECTION
 # ============================================================
@@ -825,88 +687,48 @@ with center:
 with right:
 
     # ========================================================
-    # FAN
+    # FAN BOX
     # ========================================================
 
-    st.markdown(
-        """
-        <div class="section-heading">
-            🌀 FAN
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    with st.container(border=True):
 
-    # SUBTITLE "Cooling Fan" REMOVED
+        st.subheader("🌀 FAN")
+
+        if fan_on:
+
+            st.markdown(
+                "### ON"
+            )
+
+        else:
+
+            st.markdown(
+                "### OFF"
+            )
+
+        st.write(fan_mode)
 
 
-    if fan_on:
+    st.write("")
+
+
+    # ========================================================
+    # VOLTAGE BOX
+    # ========================================================
+
+    with st.container(border=True):
+
+        st.subheader("🔋 VOLTAGE")
 
         st.markdown(
-            """
-            <div class="big-value">
-                ON
-            </div>
-            """,
-            unsafe_allow_html=True
+            f"### {voltage} V"
         )
 
-    else:
-
-        st.markdown(
-            """
-            <div class="big-value">
-                OFF
-            </div>
-            """,
-            unsafe_allow_html=True
+        voltage_percentage = min(
+            voltage / 60,
+            1.0
         )
 
-
-    st.markdown(
-        f"""
-        <div class="sub-heading">
-            {fan_mode}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-    st.divider()
-
-
-    # ========================================================
-    # VOLTAGE
-    # ========================================================
-
-    st.markdown(
-        """
-        <div class="section-heading">
-            🔋 VOLTAGE
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # SUBTITLE "Battery Voltage" REMOVED
-
-
-    st.markdown(
-        f"""
-        <div class="big-value">
-            {voltage} V
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-    voltage_percentage = min(
-        voltage / 60,
-        1.0
-    )
-
-    st.progress(
-        voltage_percentage
-    )
+        st.progress(
+            voltage_percentage
+        )
