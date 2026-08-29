@@ -1,113 +1,136 @@
 import streamlit as st
+import plotly.graph_objects as go
 
-# --------------------------------------------------
-# PAGE SETTINGS
-# --------------------------------------------------
 st.set_page_config(
-    page_title="EV System",
-    layout="wide",
-    initial_sidebar_state="collapsed"
+    page_title="EV Speedometer",
+    layout="wide"
 )
 
-# --------------------------------------------------
-# NAVY BLUE BACKGROUND + BASIC STYLING
-# --------------------------------------------------
-st.markdown("""
-<style>
-    .stApp {
-        background-color: #00121c;
-        color: white;
-    }
+# ---------------- SPEED VALUE ----------------
+speed = 45
 
-    /* Remove Streamlit top spacing */
-    .block-container {
-        padding-top: 2rem;
-        padding-bottom: 1rem;
-    }
+# ---------------- SPEEDOMETER ----------------
+fig = go.Figure(
+    go.Indicator(
+        mode="gauge+number",
+        value=speed,
 
-    /* Bottom dashboard section */
-    .bottom-box {
-        border-top: 1px solid #33434d;
-        margin-top: 30px;
-        padding-top: 15px;
-    }
+        number={
+            "font": {
+                "size": 90,
+                "color": "white"
+            },
+            "suffix": ""
+        },
 
-    .bottom-label {
-        color: #b8c1c7;
-        font-size: 20px;
-        text-align: center;
-    }
+        gauge={
+            "shape": "angular",
 
-    .bottom-value {
-        color: white;
-        font-size: 28px;
-        font-weight: bold;
-        text-align: center;
-    }
+            "axis": {
+                "range": [0, 100],
+                "tickmode": "array",
+                "tickvals": [0, 50, 100],
+                "ticktext": ["0", "50", "100"],
+                "tickfont": {
+                    "size": 20,
+                    "color": "white"
+                },
+                "tickwidth": 3,
+                "tickcolor": "white"
+            },
 
-    .warning {
-        color: #ffc107;
-        font-size: 35px;
-        text-align: center;
-    }
+            "bar": {
+                "color": "rgba(0,0,0,0)"
+            },
 
-    .light {
-        color: #42d65c;
-        font-size: 30px;
-        text-align: center;
-    }
-</style>
-""", unsafe_allow_html=True)
+            "bgcolor": "#071017",
 
+            "borderwidth": 0,
 
-# --------------------------------------------------
-# HEADER
-# --------------------------------------------------
-st.markdown(
-    "<h1 style='text-align:center; color:white;'>EV SYSTEM</h1>",
-    unsafe_allow_html=True
+            "steps": [
+                {
+                    "range": [0, 35],
+                    "color": "#39D353"
+                },
+                {
+                    "range": [35, 55],
+                    "color": "#2878E8"
+                },
+                {
+                    "range": [55, 100],
+                    "color": "#26323D"
+                }
+            ],
+
+            "threshold": {
+                "line": {
+                    "color": "white",
+                    "width": 3
+                },
+                "thickness": 0.75,
+                "value": speed
+            }
+        },
+
+        domain={
+            "x": [0, 1],
+            "y": [0.12, 1]
+        }
+    )
 )
 
+# ---------------- LAYOUT ----------------
 
-# --------------------------------------------------
-# ODOMETER + BOTTOM SECTION
-# --------------------------------------------------
-st.markdown("<div class='bottom-box'>", unsafe_allow_html=True)
+fig.update_layout(
+    paper_bgcolor="#071017",
+    plot_bgcolor="#071017",
 
-col1, col2, col3, col4 = st.columns([1, 2, 2, 1])
+    margin=dict(
+        l=20,
+        r=20,
+        t=20,
+        b=0
+    ),
 
-# Headlight
-with col1:
-    st.markdown(
-        "<div class='light'>💡</div>",
-        unsafe_allow_html=True
-    )
+    height=600,
 
-# Odometer
-with col2:
-    st.markdown(
-        """
-        <div class='bottom-label'>ODO</div>
-        <div class='bottom-value'>1256 km</div>
-        """,
-        unsafe_allow_html=True
-    )
+    font={
+        "color": "white"
+    },
 
-# Range
-with col3:
-    st.markdown(
-        """
-        <div class='bottom-label'>RANGE</div>
-        <div class='bottom-value'>78 km</div>
-        """,
-        unsafe_allow_html=True
-    )
+    annotations=[
+        # km/h
+        dict(
+            x=0.5,
+            y=0.32,
+            text="km/h",
+            showarrow=False,
+            font=dict(
+                size=28,
+                color="white"
+            )
+        ),
 
-# Warning
-with col4:
-    st.markdown(
-        "<div class='warning'>⚠</div>",
-        unsafe_allow_html=True
-    )
+        # Drive mode
+        dict(
+            x=0.5,
+            y=0.13,
+            text="<b>D</b>",
+            showarrow=False,
+            font=dict(
+                size=55,
+                color="#39D353"
+            )
+        )
+    ]
+)
 
-st.markdown("</div>", unsafe_allow_html=True)
+# ---------------- DISPLAY ----------------
+
+st.plotly_chart(
+    fig,
+    use_container_width=True,
+    config={
+        "displayModeBar": False
+    }
+)
