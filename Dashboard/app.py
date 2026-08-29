@@ -37,9 +37,6 @@ voltage = 48.6
 
 speed = 45
 
-odo = 1256
-range_km = 78
-
 fan_on = True
 fan_mode = "AUTO MODE"
 
@@ -49,15 +46,12 @@ fan_mode = "AUTO MODE"
 # ============================================================
 
 if temperature >= 70:
-
     system_status = "CRITICAL"
 
 elif temperature >= 55:
-
     system_status = "WARNING"
 
 else:
-
     system_status = "NORMAL"
 
 
@@ -69,12 +63,32 @@ st.markdown(
     """
     <style>
 
+    /* ====================================================== */
+    /* MAIN BACKGROUND                                         */
+    /* ====================================================== */
+
     .stApp {
-        background-color: #02070B;
+        background:
+            radial-gradient(
+                circle at 50% 45%,
+                rgba(35, 75, 105, 0.18),
+                transparent 42%
+            ),
+            radial-gradient(
+                circle at 10% 20%,
+                rgba(0, 160, 255, 0.07),
+                transparent 30%
+            ),
+            radial-gradient(
+                circle at 90% 80%,
+                rgba(0, 255, 120, 0.05),
+                transparent 30%
+            ),
+            #02070B;
     }
 
     [data-testid="stHeader"] {
-        background-color: #02070B;
+        background: transparent;
     }
 
     [data-testid="stToolbar"] {
@@ -88,6 +102,177 @@ st.markdown(
         padding-right: 3rem;
         max-width: 1500px;
     }
+
+
+    /* ====================================================== */
+    /* PROJECT TITLE                                           */
+    /* ====================================================== */
+
+    .project-title {
+        text-align: center;
+        white-space: nowrap;
+        font-size: 36px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        color: #F5F5F5;
+        margin-bottom: 5px;
+    }
+
+
+    /* ====================================================== */
+    /* TOP STATUS BAR                                          */
+    /* ====================================================== */
+
+    .ready-text {
+        font-size: 30px;
+        font-weight: 800;
+        color: #FFFFFF;
+    }
+
+    .clock-text {
+        font-size: 30px;
+        font-weight: 800;
+        text-align: center;
+        color: #FFFFFF;
+    }
+
+    .status-text {
+        font-size: 30px;
+        font-weight: 800;
+        text-align: right;
+        color: #FFFFFF;
+    }
+
+
+    /* ====================================================== */
+    /* FEATURE CARDS                                           */
+    /* ====================================================== */
+
+    .feature-card {
+        position: relative;
+
+        background:
+            linear-gradient(
+                145deg,
+                rgba(255,255,255,0.055),
+                rgba(255,255,255,0.015)
+            );
+
+        border: 1px solid rgba(255,255,255,0.13);
+
+        border-radius: 18px;
+
+        padding: 20px 22px 18px 22px;
+
+        margin-bottom: 18px;
+
+        box-shadow:
+            0 8px 25px rgba(0,0,0,0.30),
+            inset 0 1px 0 rgba(255,255,255,0.06);
+
+        overflow: hidden;
+    }
+
+
+    /* subtle fading light inside card */
+
+    .feature-card::before {
+        content: "";
+        position: absolute;
+
+        top: -80px;
+        left: -80px;
+
+        width: 180px;
+        height: 180px;
+
+        background: radial-gradient(
+            circle,
+            rgba(70,180,255,0.12),
+            transparent 70%
+        );
+
+        pointer-events: none;
+    }
+
+
+    .feature-title {
+        font-size: 25px;
+        font-weight: 800;
+        color: #F5F5F5;
+
+        margin-bottom: 15px;
+    }
+
+
+    .feature-value {
+        font-size: 38px;
+        font-weight: 800;
+        color: #FFFFFF;
+
+        margin-bottom: 14px;
+    }
+
+
+    .feature-mode {
+        font-size: 19px;
+        font-weight: 600;
+        color: #FFFFFF;
+
+        margin-top: 5px;
+    }
+
+
+    /* ====================================================== */
+    /* PROGRESS BAR                                            */
+    /* ====================================================== */
+
+    .progress-background {
+        width: 100%;
+        height: 8px;
+
+        background: rgba(255,255,255,0.10);
+
+        border-radius: 20px;
+
+        overflow: hidden;
+
+        box-shadow:
+            inset 0 1px 3px rgba(0,0,0,0.5);
+    }
+
+
+    .progress-fill {
+        height: 100%;
+
+        border-radius: 20px;
+
+        background:
+            linear-gradient(
+                90deg,
+                #159FDB,
+                #28C7F5
+            );
+
+        box-shadow:
+            0 0 10px rgba(40,199,245,0.45);
+    }
+
+
+    /* ====================================================== */
+    /* FAN STATUS                                              */
+    /* ====================================================== */
+
+    .fan-on {
+        color: #FFFFFF;
+        font-size: 38px;
+        font-weight: 800;
+    }
+
+
+    /* ====================================================== */
+    /* REMOVE EXTRA STREAMLIT SPACE                            */
+    /* ====================================================== */
 
     div[data-testid="stVerticalBlock"] > div {
         gap: 0.25rem;
@@ -110,7 +295,14 @@ st.write("")
 # PROJECT TITLE
 # ============================================================
 
-st.title("⚡ SMART EV MOTOR PROTECTION SYSTEM")
+st.markdown(
+    """
+    <div class="project-title">
+        ⚡ SMART EV MOTOR PROTECTION SYSTEM
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 st.divider()
 
@@ -125,40 +317,64 @@ top_left, top_middle, top_right = st.columns(
 
 
 # ============================================================
-# READY
+# READY - LEFT
 # ============================================================
 
 with top_left:
 
-    st.subheader("🟢 READY")
+    st.markdown(
+        """
+        <div class="ready-text">
+            🟢 READY
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 # ============================================================
-# REAL-TIME CLOCK
+# REAL-TIME CLOCK - CENTER
 # ============================================================
 
 with top_middle:
 
-    st.subheader(current_time)
+    st.markdown(
+        f"""
+        <div class="clock-text">
+            {current_time}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 # ============================================================
-# STATUS
+# STATUS - RIGHT
 # ============================================================
 
 with top_right:
 
     if system_status == "NORMAL":
 
-        st.subheader("🟢 STATUS: NORMAL")
+        status_text = "🟢 STATUS: NORMAL"
 
     elif system_status == "WARNING":
 
-        st.subheader("🟠 STATUS: WARNING")
+        status_text = "🟠 STATUS: WARNING"
 
     else:
 
-        st.subheader("🔴 STATUS: CRITICAL")
+        status_text = "🔴 STATUS: CRITICAL"
+
+
+    st.markdown(
+        f"""
+        <div class="status-text">
+            {status_text}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 st.divider()
@@ -180,50 +396,75 @@ left, center, right = st.columns(
 with left:
 
     # ========================================================
-    # TEMPERATURE BOX
+    # TEMPERATURE CARD
     # ========================================================
 
-    with st.container(border=True):
+    temperature_percentage = min(
+        temperature / 100,
+        1.0
+    )
 
-        st.subheader("🌡️ TEMPERATURE")
+    st.markdown(
+        f"""
+        <div class="feature-card">
 
-        st.markdown(
-            f"### {temperature} °C"
-        )
+            <div class="feature-title">
+                🌡️ TEMPERATURE
+            </div>
 
-        temperature_percentage = min(
-            temperature / 100,
-            1.0
-        )
+            <div class="feature-value">
+                {temperature} °C
+            </div>
 
-        st.progress(
-            temperature_percentage
-        )
+            <div class="progress-background">
 
+                <div
+                    class="progress-fill"
+                    style="width:{temperature_percentage * 100}%;">
+                </div>
 
-    st.write("")
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
     # ========================================================
-    # CURRENT BOX
+    # CURRENT CARD
     # ========================================================
 
-    with st.container(border=True):
+    current_percentage = min(
+        current / 10,
+        1.0
+    )
 
-        st.subheader("⚡ CURRENT")
+    st.markdown(
+        f"""
+        <div class="feature-card">
 
-        st.markdown(
-            f"### {current} A"
-        )
+            <div class="feature-title">
+                ⚡ CURRENT
+            </div>
 
-        current_percentage = min(
-            current / 10,
-            1.0
-        )
+            <div class="feature-value">
+                {current} A
+            </div>
 
-        st.progress(
-            current_percentage
-        )
+            <div class="progress-background">
+
+                <div
+                    class="progress-fill"
+                    style="width:{current_percentage * 100}%;">
+                </div>
+
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 # ============================================================
@@ -290,7 +531,7 @@ with center:
 
 
     # ========================================================
-    # CREATE ANNULAR COLOUR SEGMENT
+    # CREATE ARC SEGMENT
     # ========================================================
 
     def create_arc_segment(
@@ -477,7 +718,7 @@ with center:
 
 
     # ========================================================
-    # ONLY 0, 50, 100 LABELS
+    # NUMBER LABELS
     # ========================================================
 
     label_values = [
@@ -687,48 +928,64 @@ with center:
 with right:
 
     # ========================================================
-    # FAN BOX
+    # FAN CARD
     # ========================================================
 
-    with st.container(border=True):
+    fan_status = "ON" if fan_on else "OFF"
 
-        st.subheader("🌀 FAN")
+    st.markdown(
+        f"""
+        <div class="feature-card">
 
-        if fan_on:
+            <div class="feature-title">
+                🌀 FAN
+            </div>
 
-            st.markdown(
-                "### ON"
-            )
+            <div class="feature-value">
+                {fan_status}
+            </div>
 
-        else:
+            <div class="feature-mode">
+                {fan_mode}
+            </div>
 
-            st.markdown(
-                "### OFF"
-            )
-
-        st.write(fan_mode)
-
-
-    st.write("")
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
     # ========================================================
-    # VOLTAGE BOX
+    # VOLTAGE CARD
     # ========================================================
 
-    with st.container(border=True):
+    voltage_percentage = min(
+        voltage / 60,
+        1.0
+    )
 
-        st.subheader("🔋 VOLTAGE")
+    st.markdown(
+        f"""
+        <div class="feature-card">
 
-        st.markdown(
-            f"### {voltage} V"
-        )
+            <div class="feature-title">
+                🔋 VOLTAGE
+            </div>
 
-        voltage_percentage = min(
-            voltage / 60,
-            1.0
-        )
+            <div class="feature-value">
+                {voltage} V
+            </div>
 
-        st.progress(
-            voltage_percentage
-        )
+            <div class="progress-background">
+
+                <div
+                    class="progress-fill"
+                    style="width:{voltage_percentage * 100}%;">
+                </div>
+
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
