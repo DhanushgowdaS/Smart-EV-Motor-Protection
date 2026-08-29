@@ -2,11 +2,11 @@ import streamlit as st
 import plotly.graph_objects as go
 from datetime import datetime
 from zoneinfo import ZoneInfo
-import math
+import time
 
 
 # ============================================================
-# PAGE CONFIG
+# PAGE CONFIGURATION
 # ============================================================
 
 st.set_page_config(
@@ -18,35 +18,31 @@ st.set_page_config(
 
 
 # ============================================================
+# REAL-TIME CLOCK - INDIA
+# ============================================================
+
+india_time = datetime.now(ZoneInfo("Asia/Kolkata"))
+
+current_time = india_time.strftime("%I:%M %p")
+current_date = india_time.strftime("%d-%m-%Y")
+
+
+# ============================================================
 # EV DATA
 # ============================================================
 
-temperature = 42.0
+temperature = 42
 current = 2.6
 voltage = 48.6
-speed = 45
 
+speed = 45
 gear = "D"
 
 odo = 1256
 range_km = 78
 
-fan_status = "ON"
+fan_on = True
 fan_mode = "AUTO MODE"
-
-temperature_limit = 80
-current_limit = 10
-voltage_max = 60
-
-
-# ============================================================
-# REAL TIME
-# ============================================================
-
-now = datetime.now(ZoneInfo("Asia/Kolkata"))
-
-current_time = now.strftime("%I:%M %p")
-last_updated = now.strftime("%d-%m-%Y %I:%M:%S %p")
 
 
 # ============================================================
@@ -55,425 +51,419 @@ last_updated = now.strftime("%d-%m-%Y %I:%M:%S %p")
 
 if temperature >= 70:
     system_status = "CRITICAL"
+
 elif temperature >= 55:
     system_status = "WARNING"
+
 else:
     system_status = "NORMAL"
 
 
 # ============================================================
-# TITLE
+# STREAMLIT PAGE SPACING
 # ============================================================
 
-st.title("⚡ SMART EV MOTOR PROTECTION SYSTEM")
+st.write("")
 
 
 # ============================================================
-# TOP STATUS BAR
+# PROJECT TITLE
 # ============================================================
 
-top1, top2, top3 = st.columns(3)
+title_col = st.columns([1, 4, 1])
 
+with title_col[1]:
 
-with top1:
-    st.success("READY")
-
-
-with top2:
-    st.markdown(f"## {current_time}")
-
-
-with top3:
-    if system_status == "NORMAL":
-        st.success(f"STATUS: {system_status}")
-    elif system_status == "WARNING":
-        st.warning(f"STATUS: {system_status}")
-    else:
-        st.error(f"STATUS: {system_status}")
+    st.markdown(
+        "# ⚡ SMART EV MOTOR PROTECTION SYSTEM"
+    )
 
 
 st.divider()
 
 
 # ============================================================
-# MAIN LAYOUT
+# TOP STATUS BAR
+#
+# LEFT   -> READY
+# CENTER -> REAL TIME
+# RIGHT  -> STATUS
 # ============================================================
 
-left, middle, right = st.columns(
-    [2.5, 5, 2.5],
-    gap="large"
+top_left, top_middle, top_right = st.columns(
+    [4, 3, 4]
+)
+
+
+# ------------------------------------------------------------
+# READY
+# ------------------------------------------------------------
+
+with top_left:
+
+    st.markdown(
+        "### 🟢 READY"
+    )
+
+
+# ------------------------------------------------------------
+# REAL-TIME CLOCK
+# ------------------------------------------------------------
+
+with top_middle:
+
+    st.markdown(
+        f"## {current_time}"
+    )
+
+
+# ------------------------------------------------------------
+# STATUS
+# ------------------------------------------------------------
+
+with top_right:
+
+    if system_status == "NORMAL":
+
+        st.markdown(
+            "### 🟢 STATUS: NORMAL"
+        )
+
+    elif system_status == "WARNING":
+
+        st.markdown(
+            "### 🟠 STATUS: WARNING"
+        )
+
+    else:
+
+        st.markdown(
+            "### 🔴 STATUS: CRITICAL"
+        )
+
+
+st.divider()
+
+
+# ============================================================
+# MAIN DASHBOARD
+# ============================================================
+
+left, center, right = st.columns(
+    [3, 5, 3]
 )
 
 
 # ============================================================
-# LEFT COLUMN
+# LEFT SECTION
 # ============================================================
 
 with left:
 
-    # --------------------------------------------------------
+    # ========================================================
     # TEMPERATURE
-    # --------------------------------------------------------
+    # ========================================================
 
-    st.subheader("🌡️ TEMPERATURE")
+    st.markdown(
+        "## 🌡️ TEMPERATURE"
+    )
 
-    st.caption("Temperature")
+    st.markdown(
+        "### Temperature"
+    )
 
-    st.metric(
-        label="",
-        value=f"{temperature:.0f} °C"
+    st.markdown(
+        f"# {temperature} °C"
+    )
+
+    temperature_percentage = min(
+        temperature / 100,
+        1.0
     )
 
     st.progress(
-        min(temperature / temperature_limit, 1.0)
+        temperature_percentage
     )
 
 
     st.divider()
 
 
-    # --------------------------------------------------------
+    # ========================================================
     # CURRENT
-    # --------------------------------------------------------
+    # ========================================================
 
-    st.subheader("⚡ CURRENT")
+    st.markdown(
+        "## ⚡ CURRENT"
+    )
 
-    st.caption("Current")
+    st.markdown(
+        "### Current"
+    )
 
-    st.metric(
-        label="",
-        value=f"{current:.1f} A"
+    st.markdown(
+        f"# {current} A"
+    )
+
+    current_percentage = min(
+        current / 10,
+        1.0
     )
 
     st.progress(
-        min(current / current_limit, 1.0)
+        current_percentage
     )
 
 
 # ============================================================
-# SPEEDOMETER FUNCTION
+# CENTER - AUTOMOTIVE SPEEDOMETER
 # ============================================================
 
-def create_speedometer(value):
+with center:
 
-    fig = go.Figure()
+    # --------------------------------------------------------
+    # SPEED LIMIT
+    # --------------------------------------------------------
+
+    min_speed = 0
+    max_speed = 100
 
 
     # --------------------------------------------------------
-    # MAIN OUTER DARK ARC
+    # SPEEDOMETER
+    #
+    # GREEN = 0 - 40
+    # BLUE  = 40 - 55
+    # DARK  = 55 - 100
     # --------------------------------------------------------
 
-    fig.add_trace(
-        go.Pie(
-            values=[45, 25, 30],
-            labels=["GREEN", "BLUE", "DARK"],
-            hole=0.72,
-            sort=False,
-            direction="clockwise",
-            rotation=135,
+    speedometer = go.Figure()
 
-            marker=dict(
-                colors=[
-                    "#55FF00",
-                    "#168BFF",
-                    "#202A35"
+
+    speedometer.add_trace(
+        go.Indicator(
+
+            mode="gauge+number",
+
+            value=speed,
+
+            # ------------------------------------------------
+            # CENTER SPEED NUMBER
+            # ------------------------------------------------
+
+            number={
+                "font": {
+                    "size": 78,
+                    "color": "#FFFFFF"
+                },
+
+                "valueformat": ".0f"
+            },
+
+            # ------------------------------------------------
+            # UNIT
+            # ------------------------------------------------
+
+            title={
+                "text": "km/h",
+
+                "font": {
+                    "size": 25,
+                    "color": "#FFFFFF"
+                }
+            },
+
+            gauge={
+
+                # ------------------------------------------------
+                # GAUGE ANGLE
+                # ------------------------------------------------
+
+                "axis": {
+
+                    "range": [
+                        min_speed,
+                        max_speed
+                    ],
+
+                    # ------------------------------------------------
+                    # WHITE TICK MARKS
+                    # ------------------------------------------------
+
+                    "tickmode": "array",
+
+                    "tickvals": [
+                        0,
+                        5,
+                        10,
+                        15,
+                        20,
+                        25,
+                        30,
+                        35,
+                        40,
+                        45,
+                        50,
+                        55,
+                        60,
+                        65,
+                        70,
+                        75,
+                        80,
+                        85,
+                        90,
+                        95,
+                        100
+                    ],
+
+                    # Only show 0, 50 and 100 as numbers
+                    "ticktext": [
+                        "0",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "50",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "100"
+                    ],
+
+                    "tickfont": {
+                        "size": 22,
+                        "color": "#FFFFFF"
+                    },
+
+                    "tickcolor": "#FFFFFF",
+
+                    "tickwidth": 4,
+
+                    "ticklen": 14
+                },
+
+
+                # ------------------------------------------------
+                # NO OUTER BORDER
+                # ------------------------------------------------
+
+                "borderwidth": 0,
+
+                "bordercolor": "#02070B",
+
+
+                # ------------------------------------------------
+                # SPEEDOMETER COLOURS
+                # ------------------------------------------------
+
+                "steps": [
+
+                    # GREEN
+                    {
+                        "range": [
+                            0,
+                            40
+                        ],
+
+                        "color": "#49E600"
+                    },
+
+                    # BLUE
+                    {
+                        "range": [
+                            40,
+                            55
+                        ],
+
+                        "color": "#1479E8"
+                    },
+
+                    # DARK
+                    {
+                        "range": [
+                            55,
+                            100
+                        ],
+
+                        "color": "#263442"
+                    }
                 ],
-                line=dict(
-                    color="#0A1118",
-                    width=0
-                )
-            ),
 
-            textinfo="none",
-            hoverinfo="skip",
-            showlegend=False
+
+                # ------------------------------------------------
+                # CURRENT SPEED WHITE INDICATOR
+                # ------------------------------------------------
+
+                "threshold": {
+
+                    "line": {
+                        "color": "#FFFFFF",
+                        "width": 5
+                    },
+
+                    "thickness": 0.85,
+
+                    "value": speed
+                },
+
+
+                # ------------------------------------------------
+                # REMOVE DEFAULT NEEDLE
+                # ------------------------------------------------
+
+                "bar": {
+                    "color": "rgba(0,0,0,0)",
+                    "thickness": 0
+                }
+            }
         )
     )
 
 
-    # --------------------------------------------------------
-    # WHITE TICK MARKS
-    # --------------------------------------------------------
+    # ========================================================
+    # SPEEDOMETER LAYOUT
+    # ========================================================
 
-    # Gauge goes approximately from 135° to 405°
-    start_angle = 135
-    end_angle = 405
+    speedometer.update_layout(
 
-    radius_outer = 1.00
-    radius_inner = 0.88
+        height=470,
 
-    for i in range(21):
+        margin={
+            "l": 15,
+            "r": 15,
+            "t": 10,
+            "b": 0
+        },
 
-        angle = math.radians(
-            start_angle +
-            (end_angle - start_angle) * i / 20
-        )
+        paper_bgcolor="rgba(0,0,0,0)",
 
-        x1 = radius_inner * math.cos(angle)
-        y1 = radius_inner * math.sin(angle)
+        plot_bgcolor="rgba(0,0,0,0)",
 
-        x2 = radius_outer * math.cos(angle)
-        y2 = radius_outer * math.sin(angle)
-
-        width = 5 if i % 5 == 0 else 3
-
-        fig.add_trace(
-            go.Scatter(
-                x=[x1, x2],
-                y=[y1, y2],
-
-                mode="lines",
-
-                line=dict(
-                    color="white",
-                    width=width
-                ),
-
-                hoverinfo="skip",
-                showlegend=False
-            )
-        )
-
-
-    # --------------------------------------------------------
-    # GAUGE LABELS
-    # --------------------------------------------------------
-
-    # 0
-    angle = math.radians(138)
-
-    fig.add_annotation(
-        x=0.82 * math.cos(angle),
-        y=0.82 * math.sin(angle),
-
-        text="0",
-
-        showarrow=False,
-
-        font=dict(
-            size=22,
-            color="white"
-        )
+        font={
+            "color": "#FFFFFF"
+        }
     )
 
 
-    # 50
-    angle = math.radians(270)
-
-    fig.add_annotation(
-        x=0,
-        y=0.82,
-
-        text="50",
-
-        showarrow=False,
-
-        font=dict(
-            size=22,
-            color="white"
-        )
-    )
-
-
-    # 100
-    angle = math.radians(402)
-
-    fig.add_annotation(
-        x=0.82 * math.cos(angle),
-        y=0.82 * math.sin(angle),
-
-        text="100",
-
-        showarrow=False,
-
-        font=dict(
-            size=22,
-            color="white"
-        )
-    )
-
-
-    # --------------------------------------------------------
-    # SPEED NUMBER
-    # --------------------------------------------------------
-
-    fig.add_annotation(
-        x=0,
-        y=-0.02,
-
-        text=f"<b>{value}</b>",
-
-        showarrow=False,
-
-        font=dict(
-            size=76,
-            color="white"
-        )
-    )
-
-
-    # --------------------------------------------------------
-    # KM/H
-    # --------------------------------------------------------
-
-    fig.add_annotation(
-        x=0,
-        y=-0.32,
-
-        text="km/h",
-
-        showarrow=False,
-
-        font=dict(
-            size=27,
-            color="white"
-        )
-    )
-
-
-    # --------------------------------------------------------
-    # GEAR
-    # --------------------------------------------------------
-
-    fig.add_annotation(
-        x=0,
-        y=-0.78,
-
-        text=f"<b>{gear}</b>",
-
-        showarrow=False,
-
-        font=dict(
-            size=48,
-            color="#55FF00"
-        )
-    )
-
-
-    # --------------------------------------------------------
-    # BOTTOM LINES
-    # --------------------------------------------------------
-
-    fig.add_shape(
-        type="line",
-
-        x0=-0.72,
-        y0=-0.78,
-
-        x1=-0.30,
-        y1=-0.78,
-
-        line=dict(
-            color="#35404A",
-            width=2
-        )
-    )
-
-
-    fig.add_shape(
-        type="line",
-
-        x0=0.30,
-        y0=-0.78,
-
-        x1=0.72,
-        y1=-0.78,
-
-        line=dict(
-            color="#35404A",
-            width=2
-        )
-    )
-
-
-    # --------------------------------------------------------
-    # SPEED / GEAR INFORMATION
-    # --------------------------------------------------------
-
-    fig.add_annotation(
-        x=-0.45,
-        y=-1.12,
-
-        text="<b>SPEED</b><br><br>"
-             f"<span style='font-size:28px'>{value} km/h</span>",
-
-        showarrow=False,
-
-        align="center",
-
-        font=dict(
-            size=16,
-            color="white"
-        )
-    )
-
-
-    fig.add_annotation(
-        x=0.45,
-        y=-1.12,
-
-        text="<b>GEAR</b><br><br>"
-             f"<span style='font-size:28px;color:#55FF00'>{gear}</span>",
-
-        showarrow=False,
-
-        align="center",
-
-        font=dict(
-            size=16,
-            color="white"
-        )
-    )
-
-
-    # --------------------------------------------------------
-    # LAYOUT
-    # --------------------------------------------------------
-
-    fig.update_layout(
-
-        height=650,
-
-        margin=dict(
-            l=10,
-            r=10,
-            t=10,
-            b=10
-        ),
-
-        paper_bgcolor="#061019",
-
-        plot_bgcolor="#061019",
-
-        showlegend=False,
-
-        xaxis=dict(
-            visible=False,
-            range=[-1.25, 1.25]
-        ),
-
-        yaxis=dict(
-            visible=False,
-            range=[-1.35, 1.20],
-
-            scaleanchor="x",
-            scaleratio=1
-        )
-    )
-
-    return fig
-
-
-# ============================================================
-# CENTER COLUMN
-# ============================================================
-
-with middle:
-
-    speedometer = create_speedometer(speed)
+    # ========================================================
+    # DISPLAY SPEEDOMETER
+    # ========================================================
 
     st.plotly_chart(
+
         speedometer,
+
         use_container_width=True,
 
         config={
@@ -483,87 +473,131 @@ with middle:
     )
 
 
+    # ========================================================
+    # GEAR
+    # ========================================================
+
+    gear_col = st.columns(
+        [2, 1, 2]
+    )
+
+    with gear_col[1]:
+
+        st.markdown(
+            "### GEAR"
+        )
+
+        st.markdown(
+            f"# {gear}"
+        )
+
+
 # ============================================================
-# RIGHT COLUMN
+# RIGHT SECTION
 # ============================================================
 
 with right:
 
-    # --------------------------------------------------------
+    # ========================================================
     # FAN
-    # --------------------------------------------------------
+    # ========================================================
 
-    st.subheader("🌀 FAN")
-
-    st.caption("Cooling Fan")
-
-    st.metric(
-        label="",
-        value=fan_status
+    st.markdown(
+        "## 🌀 FAN"
     )
 
-    st.write(f"**{fan_mode}**")
+    st.markdown(
+        "### Cooling Fan"
+    )
+
+    if fan_on:
+
+        st.markdown(
+            "# ON"
+        )
+
+    else:
+
+        st.markdown(
+            "# OFF"
+        )
+
+    st.markdown(
+        f"**{fan_mode}**"
+    )
 
 
     st.divider()
 
 
-    # --------------------------------------------------------
+    # ========================================================
     # VOLTAGE
-    # --------------------------------------------------------
+    # ========================================================
 
-    st.subheader("🔋 VOLTAGE")
+    st.markdown(
+        "## 🔋 VOLTAGE"
+    )
 
-    st.caption("Battery Voltage")
+    st.markdown(
+        "### Battery Voltage"
+    )
 
-    st.metric(
-        label="",
-        value=f"{voltage:.1f} V"
+    st.markdown(
+        f"# {voltage} V"
+    )
+
+    voltage_percentage = min(
+        voltage / 60,
+        1.0
     )
 
     st.progress(
-        min(voltage / voltage_max, 1.0)
+        voltage_percentage
     )
 
 
 # ============================================================
-# BOTTOM ODO + RANGE
+# LOWER INFORMATION
+# ============================================================
+#
+# ODO AND RANGE ARE SHIFTED TO THE RIGHT
 # ============================================================
 
 st.divider()
 
 
-bottom1, bottom2 = st.columns(
-    [1, 1],
-    gap="large"
+empty_left, empty_middle, odo_col, range_col = st.columns(
+    [2.5, 1.5, 3, 3]
 )
 
 
-# ------------------------------------------------------------
+# ============================================================
 # ODOMETER
-# ------------------------------------------------------------
+# ============================================================
 
-with bottom1:
+with odo_col:
 
-    st.subheader("💡 ODO")
+    st.markdown(
+        "## 💡 ODO"
+    )
 
-    st.metric(
-        label="",
-        value=f"{odo} km"
+    st.markdown(
+        f"# {odo} km"
     )
 
 
-# ------------------------------------------------------------
+# ============================================================
 # RANGE
-# ------------------------------------------------------------
+# ============================================================
 
-with bottom2:
+with range_col:
 
-    st.subheader("🛣️ RANGE")
+    st.markdown(
+        "## 🛣️ RANGE"
+    )
 
-    st.metric(
-        label="",
-        value=f"{range_km} km"
+    st.markdown(
+        f"# {range_km} km"
     )
 
 
@@ -571,6 +605,17 @@ with bottom2:
 # LAST UPDATED
 # ============================================================
 
+st.divider()
+
 st.caption(
-    f"Last updated: {last_updated}"
+    f"Last updated: {current_date} {current_time}"
 )
+
+
+# ============================================================
+# REAL-TIME REFRESH
+# ============================================================
+
+time.sleep(1)
+
+st.rerun()
