@@ -80,9 +80,7 @@ def receive_data(data: SensorData):
 
     latest_data = data.model_dump()
 
-    latest_data["timestamp"] = (
-        datetime.now().isoformat()
-    )
+    latest_data["timestamp"] = datetime.now().isoformat()
 
     return {
 
@@ -94,7 +92,7 @@ def receive_data(data: SensorData):
 
 
 # ============================================================
-# GET LATEST DATA
+# SEND LATEST DATA TO STREAMLIT
 # ============================================================
 
 @app.get("/data")
