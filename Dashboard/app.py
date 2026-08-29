@@ -3,6 +3,8 @@ import plotly.graph_objects as go
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import math
+import requests
+import time
 
 
 # ============================================================
@@ -18,45 +20,117 @@ st.set_page_config(
 
 
 # ============================================================
-# REAL-TIME CLOCK - INDIA
+# RENDER API
 # ============================================================
 
-india_time = datetime.now(ZoneInfo("Asia/Kolkata"))
-
-current_time = india_time.strftime("%I:%M %p")
-current_date = india_time.strftime("%d-%m-%Y")
+API_URL = "https://smart-ev-motor-protection.onrender.com/data"
 
 
 # ============================================================
-# EV DATA
+# GET REAL DATA FROM RENDER
 # ============================================================
 
-temperature = 42
-current = 2.6
-voltage = 48.6
+try:
+
+    response = requests.get(
+        API_URL,
+        timeout=5
+    )
+
+    if response.status_code == 200:
+
+        data = response.json()
+
+    else:
+
+        data = None
+
+except Exception:
+
+    data = None
+
+
+# ============================================================
+# DEFAULT DATA IF RENDER IS NOT AVAILABLE
+# ============================================================
+
+if data is None:
+
+    temperature = 0.0
+    current = 0.0
+    voltage = 0.0
+
+    fan_on = False
+
+    system_on = False
+
+    system_status = "NOT CONNECTED"
+
+else:
+
+    # ========================================================
+    # REAL ESP32 DATA
+    # ========================================================
+
+    temperature = float(
+        data.get("temperature", 0.0)
+    )
+
+    current = float(
+        data.get("current", 0.0)
+    )
+
+    voltage = float(
+        data.get("voltage", 0.0)
+    )
+
+    fan_on = bool(
+        data.get("fan", False)
+    )
+
+    system_on = bool(
+        data.get("system", False)
+    )
+
+    system_status = data.get(
+        "status",
+        "NORMAL"
+    )
+
+
+# ============================================================
+# FIXED DATA FOR NOW
+# ============================================================
 
 speed = 45
-gear = "D"
 
 odo = 1256
+
 range_km = 78
 
-fan_on = True
+
+# ============================================================
+# FAN MODE
+# ============================================================
+
 fan_mode = "AUTO MODE"
 
 
 # ============================================================
-# SYSTEM STATUS
+# REAL-TIME CLOCK - INDIA
 # ============================================================
 
-if temperature >= 70:
-    system_status = "CRITICAL"
+india_time = datetime.now(
+    ZoneInfo("Asia/Kolkata")
+)
 
-elif temperature >= 55:
-    system_status = "WARNING"
+current_time = india_time.strftime(
+    "%I:%M %p"
+)
 
-else:
-    system_status = "NORMAL"
+current_date = india_time.strftime(
+    "%d-%m-%Y"
+)
 
 
 # ============================================================
@@ -226,10 +300,18 @@ top_left, top_middle, top_right = st.columns(
 
 with top_left:
 
+    if system_on:
+
+        ready_text = "🟢 READY"
+
+    else:
+
+        ready_text = "🔴 NOT READY"
+
     st.markdown(
-        """
+        f"""
         <div class="ready-text">
-            🟢 READY
+            {ready_text}
         </div>
         """,
         unsafe_allow_html=True
@@ -274,11 +356,43 @@ with top_right:
         </div>
         """
 
-    else:
+    elif system_status == "CRITICAL":
 
         status_html = """
         <div class="status-text">
             🔴 STATUS: CRITICAL
+        </div>
+        """
+
+    elif system_status == "COOLING ACTIVE":
+
+        status_html = """
+        <div class="status-text">
+            🔵 STATUS: COOLING ACTIVE
+        </div>
+        """
+
+    elif system_status == "LOAD RISING":
+
+        status_html = """
+        <div class="status-text">
+            🟠 STATUS: LOAD RISING
+        </div>
+        """
+
+    elif system_status == "NOT CONNECTED":
+
+        status_html = """
+        <div class="status-text">
+            🔴 STATUS: NOT CONNECTED
+        </div>
+        """
+
+    else:
+
+        status_html = f"""
+        <div class="status-text">
+            🟢 STATUS: {system_status}
         </div>
         """
 
@@ -319,12 +433,10 @@ with left:
         unsafe_allow_html=True
     )
 
-    # SUBTITLE "Temperature" REMOVED
-
     st.markdown(
         f"""
         <div class="big-value">
-            {temperature} °C
+            {temperature:.2f} °C
         </div>
         """,
         unsafe_allow_html=True
@@ -356,12 +468,10 @@ with left:
         unsafe_allow_html=True
     )
 
-    # SUBTITLE "Current" REMOVED
-
     st.markdown(
         f"""
         <div class="big-value">
-            {current} A
+            {current:.2f} A
         </div>
         """,
         unsafe_allow_html=True
@@ -523,7 +633,6 @@ with center:
 
     # ========================================================
     # GREEN SECTION
-    # 0 - 40
     # ========================================================
 
     speedometer.add_trace(
@@ -537,7 +646,6 @@ with center:
 
     # ========================================================
     # BLUE SECTION
-    # 40 - 55
     # ========================================================
 
     speedometer.add_trace(
@@ -551,7 +659,6 @@ with center:
 
     # ========================================================
     # DARK SECTION
-    # 55 - 100
     # ========================================================
 
     speedometer.add_trace(
@@ -576,7 +683,6 @@ with center:
         angle = speed_to_angle(
             value
         )
-
 
         if value % 10 == 0:
 
@@ -793,22 +899,27 @@ with center:
 
         xaxis={
             "visible": False,
+
             "range": [
                 -1.45,
                 1.45
             ],
+
             "fixedrange": True
         },
 
         yaxis={
             "visible": False,
+
             "range": [
                 -1.40,
                 1.40
             ],
+
             "fixedrange": True,
 
             "scaleanchor": "x",
+
             "scaleratio": 1
         }
     )
@@ -831,35 +942,6 @@ with center:
     )
 
 
-    # ========================================================
-    # GEAR
-    # ========================================================
-
-    gear_col = st.columns(
-        [2, 1, 2]
-    )
-
-    with gear_col[1]:
-
-        st.markdown(
-            """
-            <div class="gear-label">
-                GEAR
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        st.markdown(
-            f"""
-            <div class="gear-value">
-                {gear}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-
 # ============================================================
 # RIGHT SECTION
 # ============================================================
@@ -878,8 +960,6 @@ with right:
         """,
         unsafe_allow_html=True
     )
-
-    # SUBTITLE "Cooling Fan" REMOVED
 
 
     if fan_on:
@@ -931,13 +1011,11 @@ with right:
         unsafe_allow_html=True
     )
 
-    # SUBTITLE "Battery Voltage" REMOVED
-
 
     st.markdown(
         f"""
         <div class="big-value">
-            {voltage} V
+            {voltage:.2f} V
         </div>
         """,
         unsafe_allow_html=True
@@ -951,6 +1029,66 @@ with right:
 
     st.progress(
         voltage_percentage
-    ) 
+    )
 
 
+# ============================================================
+# LOWER INFORMATION
+# ============================================================
+
+st.divider()
+
+
+empty_left, empty_middle, odo_col, range_col = st.columns(
+    [2.5, 1.5, 3, 3]
+)
+
+
+# ============================================================
+# ODOMETER
+# ============================================================
+
+with odo_col:
+
+    st.markdown(
+        "## 💡 ODO"
+    )
+
+    st.markdown(
+        f"# {odo} km"
+    )
+
+
+# ============================================================
+# RANGE
+# ============================================================
+
+with range_col:
+
+    st.markdown(
+        "## 🛣️ RANGE"
+    )
+
+    st.markdown(
+        f"# {range_km} km"
+    )
+
+
+# ============================================================
+# LAST UPDATED
+# ============================================================
+
+st.divider()
+
+st.caption(
+    f"Last updated: {current_date} {current_time}"
+)
+
+
+# ============================================================
+# REAL-TIME REFRESH
+# ============================================================
+
+time.sleep(1)
+
+st.rerun()
