@@ -60,14 +60,23 @@ else:
 
 
 # ============================================================
-# PAGE BACKGROUND
+# SMALL TOP SPACE
 # ============================================================
 
-st.markdown(
-    """
-    # ⚡ SMART EV MOTOR PROTECTION SYSTEM
-    """
-)
+st.write("")
+
+
+# ============================================================
+# PROJECT TITLE
+# ============================================================
+
+title_col = st.columns([1, 8, 1])
+
+with title_col[1]:
+    st.markdown(
+        "## ⚡ SMART EV MOTOR PROTECTION SYSTEM"
+    )
+
 
 st.divider()
 
@@ -77,16 +86,20 @@ st.divider()
 # ============================================================
 
 top_left, top_middle, top_right = st.columns(
-    [4, 3, 5]
+    [5, 3, 5]
 )
 
 
 # ============================================================
 # READY
+# SAME SIZE AS TIME
 # ============================================================
 
 with top_left:
-    st.write("🟢 **READY**")
+
+    st.markdown(
+        "### 🟢 READY"
+    )
 
 
 # ============================================================
@@ -94,23 +107,43 @@ with top_left:
 # ============================================================
 
 with top_middle:
-    st.write(f"### {current_time}")
+
+    st.markdown(
+        f"### {current_time}"
+    )
 
 
 # ============================================================
 # STATUS
+# SAME SIZE AS TIME
+# MOVED MORE TO THE RIGHT
 # ============================================================
 
 with top_right:
 
-    if system_status == "NORMAL":
-        st.write("🟢 **STATUS: NORMAL**")
+    status_space, status_col = st.columns(
+        [1, 4]
+    )
 
-    elif system_status == "WARNING":
-        st.write("🟠 **STATUS: WARNING**")
+    with status_col:
 
-    else:
-        st.write("🔴 **STATUS: CRITICAL**")
+        if system_status == "NORMAL":
+
+            st.markdown(
+                "### 🟢 STATUS: NORMAL"
+            )
+
+        elif system_status == "WARNING":
+
+            st.markdown(
+                "### 🟠 STATUS: WARNING"
+            )
+
+        else:
+
+            st.markdown(
+                "### 🔴 STATUS: CRITICAL"
+            )
 
 
 st.divider()
@@ -135,11 +168,17 @@ with left:
     # TEMPERATURE
     # ========================================================
 
-    st.subheader("🌡️ TEMPERATURE")
+    st.markdown(
+        "### 🌡️ TEMPERATURE"
+    )
 
-    st.write("Temperature")
+    st.write(
+        "Temperature"
+    )
 
-    st.write(f"## {temperature} °C")
+    st.subheader(
+        f"{temperature} °C"
+    )
 
     temperature_percentage = min(
         temperature / 100,
@@ -158,11 +197,17 @@ with left:
     # CURRENT
     # ========================================================
 
-    st.subheader("⚡ CURRENT")
+    st.markdown(
+        "### ⚡ CURRENT"
+    )
 
-    st.write("Current")
+    st.write(
+        "Current"
+    )
 
-    st.write(f"## {current} A")
+    st.subheader(
+        f"{current} A"
+    )
 
     current_percentage = min(
         current / 10,
@@ -191,6 +236,8 @@ with center:
 
     # --------------------------------------------------------
     # GAUGE GEOMETRY
+    #
+    # 240 DEGREE AUTOMOTIVE STYLE GAUGE
     #
     # LEFT  = 0
     # TOP   = 50
@@ -392,20 +439,11 @@ with center:
         )
 
 
-        # --------------------------------------------
-        # BIG TICK
-        # --------------------------------------------
-
         if value % 10 == 0:
 
             tick_outer = 1.17
             tick_inner = 1.02
             tick_width = 6
-
-
-        # --------------------------------------------
-        # SMALL TICK
-        # --------------------------------------------
 
         else:
 
@@ -576,7 +614,6 @@ with center:
 
     # ========================================================
     # KM/H
-    # DIRECTLY UNDER SPEED
     # ========================================================
 
     speedometer.add_annotation(
@@ -670,9 +707,13 @@ with center:
 
     with gear_col[1]:
 
-        st.write("**GEAR**")
+        st.markdown(
+            "### GEAR"
+        )
 
-        st.write(f"# {gear}")
+        st.markdown(
+            f"# {gear}"
+        )
 
 
 # ============================================================
@@ -685,19 +726,31 @@ with right:
     # FAN
     # ========================================================
 
-    st.subheader("🌀 FAN")
+    st.markdown(
+        "### 🌀 FAN"
+    )
 
-    st.write("Cooling Fan")
+    st.write(
+        "Cooling Fan"
+    )
 
 
     if fan_on:
-        st.write("## ON")
+
+        st.subheader(
+            "ON"
+        )
 
     else:
-        st.write("## OFF")
+
+        st.subheader(
+            "OFF"
+        )
 
 
-    st.write(fan_mode)
+    st.write(
+        fan_mode
+    )
 
 
     st.divider()
@@ -707,11 +760,17 @@ with right:
     # VOLTAGE
     # ========================================================
 
-    st.subheader("🔋 VOLTAGE")
+    st.markdown(
+        "### 🔋 VOLTAGE"
+    )
 
-    st.write("Battery Voltage")
+    st.write(
+        "Battery Voltage"
+    )
 
-    st.write(f"## {voltage} V")
+    st.subheader(
+        f"{voltage} V"
+    )
 
 
     voltage_percentage = min(
@@ -722,43 +781,3 @@ with right:
     st.progress(
         voltage_percentage
     )
-
-
-# ============================================================
-# ODOMETER + RANGE
-# ============================================================
-
-st.divider()
-
-odo_col, range_col = st.columns(2)
-
-
-# ============================================================
-# ODOMETER
-# ============================================================
-
-with odo_col:
-
-    st.write("💡 **ODO**")
-
-    st.write(f"## {odo} km")
-
-
-# ============================================================
-# RANGE
-# ============================================================
-
-with range_col:
-
-    st.write("🛣️ **RANGE**")
-
-    st.write(f"## {range_km} km")
-
-
-# ============================================================
-# LAST UPDATED
-# ============================================================
-
-st.caption(
-    f"Last updated: {current_date} {current_time}"
-)
