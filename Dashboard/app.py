@@ -1,333 +1,386 @@
 import streamlit as st
+import matplotlib.pyplot as plt
+import numpy as np
 from datetime import datetime
 
-# ---------------- PAGE SETTINGS ----------------
+
+# ============================================================
+# PAGE CONFIGURATION
+# ============================================================
 
 st.set_page_config(
     page_title="EV System",
     page_icon="⚡",
-    layout="wide",
-    initial_sidebar_state="collapsed"
+    layout="wide"
 )
 
-# ---------------- DARK EV BACKGROUND ----------------
 
-st.markdown("""
-<style>
+# ============================================================
+# DATA
+# Later these values can come from ESP32/API
+# ============================================================
 
-#MainMenu {visibility: hidden;}
-header {visibility: hidden;}
-footer {visibility: hidden;}
+temperature = 42.0
+current = 2.6
+voltage = 48.6
+speed = 45
+gear = "D"
 
-.stApp {
-    background: #061019;
-    color: white;
-}
+fan_status = "ON"
+fan_mode = "AUTO MODE"
 
-.block-container {
-    padding-top: 25px;
-    padding-left: 45px;
-    padding-right: 45px;
-    max-width: 1400px;
-}
+system_status = "NORMAL"
 
-/* Remove default Streamlit spacing */
-div[data-testid="column"] {
-    padding: 0px 10px;
-}
-
-/* EV title */
-.ev-title {
-    font-size: 32px;
-    font-weight: 800;
-    letter-spacing: 2px;
-}
-
-.ev-green {
-    color: #55e51b;
-}
-
-.ev-white {
-    color: #ffffff;
-}
-
-/* Header time */
-.header-time {
-    text-align: center;
-    color: #ffffff;
-    font-size: 20px;
-    font-weight: 600;
-}
-
-/* Header status */
-.header-status {
-    text-align: right;
-    color: #55e51b;
-    font-size: 20px;
-    font-weight: 700;
-}
-
-/* Information blocks */
-.info-title {
-    color: #eeeeee;
-    font-size: 18px;
-    font-weight: 700;
-    margin-bottom: 8px;
-}
-
-.info-value {
-    font-size: 32px;
-    font-weight: 700;
-}
-
-.blue {
-    color: #1688ff;
-}
-
-.orange {
-    color: #ffb21c;
-}
-
-.green {
-    color: #55e51b;
-}
-
-.white {
-    color: white;
-}
-
-/* Speedometer */
-.speed-area {
-    text-align: center;
-    margin-top: 25px;
-}
-
-.speed-number {
-    color: white;
-    font-size: 70px;
-    font-weight: 800;
-    line-height: 0.9;
-}
-
-.speed-unit {
-    color: #eeeeee;
-    font-size: 20px;
-    margin-top: 8px;
-}
-
-.gear {
-    color: #55e51b;
-    font-size: 50px;
-    font-weight: 700;
-    margin-top: 15px;
-}
-
-/* Gauge */
-.gauge {
-    width: 310px;
-    height: 155px;
-    margin: auto;
-    border-radius: 310px 310px 0 0;
-    background:
-        conic-gradient(
-            from 270deg,
-            #55e51b 0deg 100deg,
-            #1688ff 100deg 125deg,
-            #26333d 125deg 180deg,
-            transparent 180deg
-        );
-    position: relative;
-}
-
-.gauge-inner {
-    position: absolute;
-    width: 250px;
-    height: 125px;
-    left: 30px;
-    bottom: 0;
-    background: #061019;
-    border-radius: 250px 250px 0 0;
-}
-
-/* Bottom information */
-.bottom-line {
-    border-top: 1px solid #33414a;
-    margin-top: 35px;
-    padding-top: 20px;
-}
-
-.bottom-label {
-    color: #bbbbbb;
-    font-size: 15px;
-    text-align: center;
-}
-
-.bottom-value {
-    color: white;
-    font-size: 25px;
-    font-weight: 700;
-    text-align: center;
-}
-
-</style>
-""", unsafe_allow_html=True)
+odo = 1256
+range_km = 78
 
 
-# ---------------- HEADER ----------------
+# ============================================================
+# COLORS
+# ============================================================
 
-header1, header2, header3 = st.columns([2, 2, 2])
+NAVY = "#061019"
+WHITE = "#FFFFFF"
+GREEN = "#55E51B"
+BLUE = "#1688FF"
+ORANGE = "#FFB21C"
+GREY = "#26333D"
+LIGHT_GREY = "#B8C0C5"
 
-with header1:
-    st.markdown(
-        '<div class="ev-title"><span class="ev-green">EV</span> '
-        '<span class="ev-white">SYSTEM</span></div>',
-        unsafe_allow_html=True
-    )
 
-with header2:
+# ============================================================
+# HEADER
+# ============================================================
+
+col1, col2, col3 = st.columns([1.5, 1, 1.5])
+
+with col1:
+    st.markdown("## ⚡ EV SYSTEM")
+
+with col2:
     current_time = datetime.now().strftime("%I:%M %p")
-
     st.markdown(
-        f'<div class="header-time">{current_time}</div>',
+        f"<h3 style='text-align:center'>{current_time}</h3>",
         unsafe_allow_html=True
     )
 
-with header3:
+with col3:
     st.markdown(
-        '<div class="header-status">● READY</div>',
+        "<h3 style='text-align:right;color:#55E51B'>● READY</h3>",
         unsafe_allow_html=True
     )
 
 
-st.markdown("<hr>", unsafe_allow_html=True)
+st.divider()
 
 
-# ---------------- MAIN DASHBOARD ----------------
+# ============================================================
+# MAIN DASHBOARD
+# ============================================================
 
-left, center, right = st.columns([1.15, 2.2, 1.15])
+left, centre, right = st.columns([1.2, 2.2, 1.2])
 
 
-# ==================================================
+# ============================================================
 # LEFT SIDE
-# ==================================================
+# ============================================================
 
 with left:
 
+    st.subheader("🌡 TEMPERATURE")
+
     st.markdown(
-        """
-        <div class="info-title">🌡 TEMPERATURE</div>
-        <div class="info-value blue">42 °C</div>
-        """,
+        f"### <span style='color:{BLUE}'>{temperature:.0f} °C</span>",
         unsafe_allow_html=True
     )
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.write("")
+
+    st.subheader("⚡ CURRENT")
 
     st.markdown(
-        """
-        <div class="info-title">⚡ CURRENT</div>
-        <div class="info-value orange">2.6 A</div>
-        """,
+        f"### <span style='color:{ORANGE}'>{current:.1f} A</span>",
         unsafe_allow_html=True
     )
 
 
-# ==================================================
-# CENTER SPEEDOMETER
-# ==================================================
+# ============================================================
+# SPEEDOMETER FUNCTION
+# ============================================================
 
-with center:
+def create_speedometer(speed_value):
 
-    st.markdown('<div class="speed-area">', unsafe_allow_html=True)
-
-    # Gauge
-    st.markdown(
-        """
-        <div class="gauge">
-            <div class="gauge-inner"></div>
-        </div>
-        """,
-        unsafe_allow_html=True
+    fig, ax = plt.subplots(
+        figsize=(6, 3.8),
+        facecolor=NAVY
     )
 
+    ax.set_facecolor(NAVY)
+
+    # --------------------------------------------------------
+    # Gauge limits
+    # --------------------------------------------------------
+
+    max_speed = 100
+
+    start_angle = 210
+    end_angle = -30
+
+    # Convert angles
+    theta = np.linspace(
+        np.radians(start_angle),
+        np.radians(end_angle),
+        300
+    )
+
+    # --------------------------------------------------------
+    # Outer gauge
+    # --------------------------------------------------------
+
+    ax.plot(
+        theta,
+        np.ones_like(theta),
+        linewidth=25,
+        color=GREY,
+        solid_capstyle="round"
+    )
+
+    # --------------------------------------------------------
+    # Active green section
+    # --------------------------------------------------------
+
+    green_limit = 50
+
+    green_theta = np.linspace(
+        np.radians(start_angle),
+        np.radians(
+            start_angle
+            - ((start_angle - end_angle) * green_limit / max_speed)
+        ),
+        200
+    )
+
+    ax.plot(
+        green_theta,
+        np.ones_like(green_theta),
+        linewidth=25,
+        color=GREEN,
+        solid_capstyle="round"
+    )
+
+    # --------------------------------------------------------
+    # Blue section
+    # --------------------------------------------------------
+
+    blue_start = 50
+    blue_end = 65
+
+    blue_theta = np.linspace(
+        np.radians(
+            start_angle
+            - ((start_angle - end_angle) * blue_start / max_speed)
+        ),
+        np.radians(
+            start_angle
+            - ((start_angle - end_angle) * blue_end / max_speed)
+        ),
+        100
+    )
+
+    ax.plot(
+        blue_theta,
+        np.ones_like(blue_theta),
+        linewidth=25,
+        color=BLUE,
+        solid_capstyle="butt"
+    )
+
+    # --------------------------------------------------------
+    # Tick marks
+    # --------------------------------------------------------
+
+    for value in range(0, 101, 10):
+
+        angle = np.radians(
+            start_angle
+            - ((start_angle - end_angle) * value / max_speed)
+        )
+
+        x1 = 0.91 * np.cos(angle)
+        y1 = 0.91 * np.sin(angle)
+
+        x2 = 1.03 * np.cos(angle)
+        y2 = 1.03 * np.sin(angle)
+
+        ax.plot(
+            [x1, x2],
+            [y1, y2],
+            color=WHITE,
+            linewidth=2
+        )
+
+        # Only show important numbers
+        if value in [0, 50, 100]:
+
+            tx = 0.78 * np.cos(angle)
+            ty = 0.78 * np.sin(angle)
+
+            ax.text(
+                tx,
+                ty,
+                str(value),
+                color=WHITE,
+                fontsize=12,
+                ha="center",
+                va="center",
+                fontweight="bold"
+            )
+
+    # --------------------------------------------------------
     # Speed
-    st.markdown(
-        """
-        <div class="speed-number">45</div>
-        <div class="speed-unit">km/h</div>
-        <div class="gear">D</div>
-        """,
-        unsafe_allow_html=True
+    # --------------------------------------------------------
+
+    ax.text(
+        0,
+        0.15,
+        str(int(speed_value)),
+        color=WHITE,
+        fontsize=48,
+        ha="center",
+        va="center",
+        fontweight="bold"
     )
 
-    st.markdown('</div>', unsafe_allow_html=True)
+    ax.text(
+        0,
+        -0.08,
+        "km/h",
+        color=LIGHT_GREY,
+        fontsize=15,
+        ha="center",
+        va="center"
+    )
+
+    # --------------------------------------------------------
+    # Gear
+    # --------------------------------------------------------
+
+    ax.text(
+        0,
+        -0.43,
+        gear,
+        color=GREEN,
+        fontsize=32,
+        ha="center",
+        va="center",
+        fontweight="bold"
+    )
+
+    # --------------------------------------------------------
+    # Clean graph
+    # --------------------------------------------------------
+
+    ax.set_xlim(-1.25, 1.25)
+    ax.set_ylim(-0.65, 1.15)
+
+    ax.axis("off")
+
+    plt.tight_layout()
+
+    return fig
 
 
-# ==================================================
+# ============================================================
+# CENTRE SPEEDOMETER
+# ============================================================
+
+with centre:
+
+    speedometer = create_speedometer(speed)
+
+    st.pyplot(
+        speedometer,
+        use_container_width=True
+    )
+
+    plt.close(speedometer)
+
+
+# ============================================================
 # RIGHT SIDE
-# ==================================================
+# ============================================================
 
 with right:
 
+    st.subheader("🌀 FAN")
+
     st.markdown(
-        """
-        <div class="info-title">🌀 FAN</div>
-        <div class="info-value green">ON</div>
-        <div style="color:#aaaaaa;font-size:14px;">AUTO MODE</div>
-        """,
+        f"### <span style='color:{GREEN}'>{fan_status}</span>",
         unsafe_allow_html=True
     )
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.caption(fan_mode)
+
+    st.write("")
+
+    st.subheader("🔋 VOLTAGE")
 
     st.markdown(
-        """
-        <div class="info-title">🔋 VOLTAGE</div>
-        <div class="info-value blue">48.6 V</div>
-        """,
+        f"### <span style='color:{BLUE}'>{voltage:.1f} V</span>",
         unsafe_allow_html=True
     )
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.write("")
+
+    st.subheader("🛡 STATUS")
 
     st.markdown(
-        """
-        <div class="info-title">🛡 STATUS</div>
-        <div class="info-value green">NORMAL</div>
-        """,
+        f"### <span style='color:{GREEN}'>{system_status}</span>",
         unsafe_allow_html=True
     )
 
 
-# ---------------- BOTTOM ----------------
+# ============================================================
+# BOTTOM INFORMATION
+# ============================================================
 
-st.markdown('<div class="bottom-line"></div>', unsafe_allow_html=True)
+st.divider()
 
-b1, b2, b3 = st.columns([1, 2, 1])
+bottom1, bottom2, bottom3 = st.columns(3)
 
-with b1:
+with bottom1:
+
+    st.caption("ODO")
+
     st.markdown(
-        """
-        <div class="bottom-label">ODO</div>
-        <div class="bottom-value">1256 km</div>
-        """,
-        unsafe_allow_html=True
+        f"### {odo} km"
     )
 
-with b2:
+
+with bottom2:
+
+    st.caption("RANGE")
+
     st.markdown(
-        """
-        <div class="bottom-label">RANGE</div>
-        <div class="bottom-value">78 km</div>
-        """,
-        unsafe_allow_html=True
+        f"### {range_km} km"
     )
 
-with b3:
+
+with bottom3:
+
+    st.caption("SYSTEM")
+
     st.markdown(
-        """
-        <div class="bottom-label">⚠</div>
-        <div class="bottom-value">READY</div>
-        """,
-        unsafe_allow_html=True
+        f"### 🟢 {system_status}"
     )
+
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+st.write("")
+
+st.caption(
+    "EV System Dashboard • Real-time vehicle monitoring"
+)
