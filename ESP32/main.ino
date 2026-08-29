@@ -1,524 +1,51 @@
-// ============================================================
-// EV MOTOR PROTECTION SYSTEM
-// ESP32 MAIN CODE
-// ============================================================
-//
-// Sensors:
-//   ACS712 30A  -> GPIO 35
-//   DS18B20     -> GPIO 4
-//   Voltage     -> VOLTAGE_PIN
-//   Fan Relay   -> GPIO 13
-//
-// Relay:
-//   ACTIVE LOW
-//
-// Communication:
-//   ESP32 -> HTTP POST -> Backend
-// ============================================================
-
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
-#include <math.h>
 
 // ============================================================
-// WIFI SETTINGS
+// WIFI
 // ============================================================
 
 const char* WIFI_SSID = "Admin";
 const char* WIFI_PASSWORD = "password";
 
-// PUT YOUR BACKEND URL HERE
-// Example:
-// https://your-backend.onrender.com/data
-const char* SERVER_URL = "YOUR_BACKEND_URL/data";
+
+// ============================================================
+// SERVER
+// ============================================================
+
+const char* SERVER_URL =
+    "https://smart-ev-motor-protection.onrender.com/data";
 
 
 // ============================================================
-// PIN CONFIGURATION
+// SENSOR PINS
 // ============================================================
 
-const int CURRENT_PIN = 35;
+// Change these according to your actual hardware
 
-const int TEMP_PIN = 4;
+#define VOLTAGE_PIN 34
+#define CURRENT_PIN 35
+#define TEMPERATURE_PIN 32
 
-const int RELAY_PIN = 13;
+// System ON/OFF input
+#define SYSTEM_PIN 27
 
-
-// ------------------------------------------------------------
-// CHANGE THIS TO THE ADC PIN WHERE YOUR VOLTAGE SENSOR IS
-// CONNECTED.
-// ------------------------------------------------------------
-
-const int VOLTAGE_PIN = 34;
-
-
-// ============================================================
-// ACS712-30A SETTINGS
-// ============================================================
-
-const float ZERO_VOLTAGE = 2.5605;
-
-const float SENSITIVITY = 0.066;
-
-
-// ============================================================
-// VOLTAGE SENSOR SETTINGS
-// ============================================================
-//
-// IMPORTANT:
-// Change VOLTAGE_DIVIDER_RATIO according to your resistor
-// voltage divider.
-//
-// Example:
-// R1 = 30k
-// R2 = 10k
-//
-// Ratio = (30 + 10) / 10 = 4.0
-//
-// If your voltage module already outputs a scaled voltage,
-// use its appropriate ratio.
-// ============================================================
-
-const float VOLTAGE_DIVIDER_RATIO = 4.0;
-
-
-// ============================================================
-// FAN TEMPERATURE SETTINGS
-// ============================================================
-
-const float FAN_ON_TEMP = 31.0;
-
-const float FAN_OFF_TEMP = 30.0;
-
-
-// ============================================================
-// CURRENT TREND SETTINGS
-// ============================================================
-
-const float CURRENT_TREND_THRESHOLD = 0.03;
-
-
-// ============================================================
-// TEMPERATURE TREND SETTINGS
-// ============================================================
-
-const float TEMP_TREND_THRESHOLD = 0.30;
-
-
-// ============================================================
-// CURRENT SENSOR
-// ============================================================
-
-const int CURRENT_SAMPLES = 300;
-
-
-// ============================================================
-// DS18B20
-// ============================================================
-
-OneWire oneWire(TEMP_PIN);
-
-DallasTemperature sensors(&oneWire);
+// Cooling fan control
+#define FAN_PIN 26
 
 
 // ============================================================
 // VARIABLES
 // ============================================================
 
-float current = 0.0;
-
 float voltage = 0.0;
-
+float current = 0.0;
 float temperature = 0.0;
 
-float previousCurrent = 0.0;
+bool systemOn = false;
+bool fanOn = false;
 
-float previousTemperature = 0.0;
-
-float baselineCurrent = 0.0;
-
-bool fanON = false;
-
-
-// ============================================================
-// READ ACS712 CURRENT
-// ============================================================
-
-float readCurrent()
-{
-    double sum = 0;
-
-    for (int i = 0; i < CURRENT_SAMPLES; i++)
-    {
-        sum += analogReadMilliVolts(CURRENT_PIN);
-
-        delayMicroseconds(100);
-    }
-
-    float sensorVoltage =
-        (sum / CURRENT_SAMPLES) / 1000.0;
-
-    float measuredCurrent =
-        (sensorVoltage - ZERO_VOLTAGE) / SENSITIVITY;
-
-    measuredCurrent = fabs(measuredCurrent);
-
-    // Remove very small noise
-    if (measuredCurrent < 0.03)
-    {
-        measuredCurrent = 0;
-    }
-
-    return measuredCurrent;
-}
-
-
-// ============================================================
-// READ BATTERY VOLTAGE
-// ============================================================
-
-float readVoltage()
-{
-    const int samples = 50;
-
-    double sum = 0;
-
-    for (int i = 0; i < samples; i++)
-    {
-        sum += analogReadMilliVolts(VOLTAGE_PIN);
-
-        delayMicroseconds(200);
-    }
-
-    float adcVoltage =
-        (sum / samples) / 1000.0;
-
-    float batteryVoltage =
-        adcVoltage * VOLTAGE_DIVIDER_RATIO;
-
-    return batteryVoltage;
-}
-
-
-// ============================================================
-// READ TEMPERATURE
-// ============================================================
-
-float readTemperature()
-{
-    sensors.requestTemperatures();
-
-    float temp =
-        sensors.getTempCByIndex(0);
-
-    if (temp == DEVICE_DISCONNECTED_C)
-    {
-        Serial.println("DS18B20 ERROR!");
-
-        return -127.0;
-    }
-
-    return temp;
-}
-
-
-// ============================================================
-// CURRENT TREND
-// ============================================================
-
-String getCurrentTrend()
-{
-    if (current > previousCurrent +
-        CURRENT_TREND_THRESHOLD)
-    {
-        return "INCREASING";
-    }
-
-    if (current < previousCurrent -
-        CURRENT_TREND_THRESHOLD)
-    {
-        return "DECREASING";
-    }
-
-    return "STABLE";
-}
-
-
-// ============================================================
-// TEMPERATURE TREND
-// ============================================================
-
-String getTemperatureTrend()
-{
-    if (temperature >
-        previousTemperature +
-        TEMP_TREND_THRESHOLD)
-    {
-        return "INCREASING";
-    }
-
-    if (temperature <
-        previousTemperature -
-        TEMP_TREND_THRESHOLD)
-    {
-        return "DECREASING";
-    }
-
-    return "STABLE";
-}
-
-
-// ============================================================
-// FAN CONTROL
-// ============================================================
-
-void controlFan()
-{
-    // FAN ON
-    if (temperature >= FAN_ON_TEMP)
-    {
-        digitalWrite(RELAY_PIN, LOW);
-
-        fanON = true;
-    }
-
-    // FAN OFF
-    else if (temperature <= FAN_OFF_TEMP)
-    {
-        digitalWrite(RELAY_PIN, HIGH);
-
-        fanON = false;
-    }
-}
-
-
-// ============================================================
-// MOTOR STATUS
-// ============================================================
-
-String getMotorStatus()
-{
-    // Emergency
-    if (temperature >= 40.0)
-    {
-        return "EMERGENCY";
-    }
-
-    // Warning
-    if (temperature >= 35.0)
-    {
-        return "WARNING";
-    }
-
-    return "NORMAL";
-}
-
-
-// ============================================================
-// SEND DATA TO BACKEND
-// ============================================================
-
-void sendData()
-{
-    if (WiFi.status() != WL_CONNECTED)
-    {
-        Serial.println("WiFi disconnected");
-
-        return;
-    }
-
-    String currentTrend =
-        getCurrentTrend();
-
-    String tempTrend =
-        getTemperatureTrend();
-
-    String motorStatus =
-        getMotorStatus();
-
-
-    // --------------------------------------------------------
-    // LOAD STATUS
-    // --------------------------------------------------------
-
-    String loadStatus = "NORMAL";
-
-    if (currentTrend == "INCREASING" &&
-        tempTrend == "INCREASING")
-    {
-        loadStatus = "LOAD INCREASING";
-    }
-
-    else if (currentTrend == "DECREASING" &&
-             tempTrend == "DECREASING")
-    {
-        loadStatus = "LOAD DECREASING";
-    }
-
-
-    // --------------------------------------------------------
-    // CREATE JSON
-    // --------------------------------------------------------
-
-    String json = "{";
-
-    json += "\"voltage\":";
-    json += String(voltage, 2);
-
-    json += ",";
-
-    json += "\"current\":";
-    json += String(current, 3);
-
-    json += ",";
-
-    json += "\"temperature\":";
-    json += String(temperature, 2);
-
-    json += ",";
-
-    json += "\"current_trend\":\"";
-    json += currentTrend;
-    json += "\"";
-
-    json += ",";
-
-    json += "\"temperature_trend\":\"";
-    json += tempTrend;
-    json += "\"";
-
-    json += ",";
-
-    json += "\"load_status\":\"";
-    json += loadStatus;
-    json += "\"";
-
-    json += ",";
-
-    json += "\"motor_status\":\"";
-    json += motorStatus;
-    json += "\"";
-
-    json += ",";
-
-    json += "\"fan\":";
-    json += fanON ? "true" : "false";
-
-    json += "}";
-
-
-    // --------------------------------------------------------
-    // HTTP POST
-    // --------------------------------------------------------
-
-    HTTPClient http;
-
-    http.begin(SERVER_URL);
-
-    http.addHeader(
-        "Content-Type",
-        "application/json"
-    );
-
-    int responseCode =
-        http.POST(json);
-
-    Serial.print("Server Response: ");
-
-    Serial.println(responseCode);
-
-    http.end();
-}
-
-
-// ============================================================
-// DISPLAY DATA
-// ============================================================
-
-void printData()
-{
-    Serial.println();
-    Serial.println("------------------------------------------");
-
-    Serial.print("Battery Voltage : ");
-    Serial.print(voltage, 2);
-    Serial.println(" V");
-
-    Serial.print("Motor Current   : ");
-    Serial.print(current, 3);
-    Serial.println(" A");
-
-    Serial.print("Current Trend   : ");
-    Serial.println(getCurrentTrend());
-
-    Serial.print("Motor Temp      : ");
-    Serial.print(temperature, 2);
-    Serial.println(" °C");
-
-    Serial.print("Temp Trend      : ");
-    Serial.println(getTemperatureTrend());
-
-    Serial.print("Motor Status    : ");
-    Serial.println(getMotorStatus());
-
-    Serial.print("Fan             : ");
-
-    if (fanON)
-        Serial.println("ON");
-    else
-        Serial.println("OFF");
-
-    Serial.println("------------------------------------------");
-}
-
-
-// ============================================================
-// CONNECT WIFI
-// ============================================================
-
-void connectWiFi()
-{
-    Serial.print("Connecting to WiFi");
-
-    WiFi.begin(
-        WIFI_SSID,
-        WIFI_PASSWORD
-    );
-
-    int attempts = 0;
-
-    while (WiFi.status() != WL_CONNECTED &&
-           attempts < 30)
-    {
-        delay(500);
-
-        Serial.print(".");
-
-        attempts++;
-    }
-
-    Serial.println();
-
-    if (WiFi.status() == WL_CONNECTED)
-    {
-        Serial.println("WiFi connected!");
-
-        Serial.print("ESP32 IP: ");
-
-        Serial.println(
-            WiFi.localIP()
-        );
-    }
-
-    else
-    {
-        Serial.println(
-            "WiFi connection failed"
-        );
-    }
-}
+String systemStatus = "NORMAL";
 
 
 // ============================================================
@@ -531,120 +58,489 @@ void setup()
 
     delay(1000);
 
-
-    // ADC
-    analogReadResolution(12);
-
-    analogSetPinAttenuation(
-        CURRENT_PIN,
-        ADC_11db
-    );
-
-    analogSetPinAttenuation(
-        VOLTAGE_PIN,
-        ADC_11db
-    );
-
-
-    // Relay
-    pinMode(
-        RELAY_PIN,
-        OUTPUT
-    );
-
-    // IMPORTANT:
-    // Active LOW relay = HIGH means OFF
-    digitalWrite(
-        RELAY_PIN,
-        HIGH
-    );
-
-
-    // Temperature sensor
-    sensors.begin();
-
-
     Serial.println();
-    Serial.println(
-        "======================================"
-    );
-
-    Serial.println(
-        "     EV MOTOR PROTECTION SYSTEM"
-    );
-
-    Serial.println(
-        "======================================"
-    );
-
-
-    connectWiFi();
+    Serial.println("=================================");
+    Serial.println(" SMART EV MOTOR PROTECTION SYSTEM");
+    Serial.println(" ESP32 DATA SENDER");
+    Serial.println("=================================");
+    Serial.println();
 
 
     // --------------------------------------------------------
-    // INITIAL SENSOR READING
+    // PIN CONFIGURATION
     // --------------------------------------------------------
 
-    delay(2000);
+    pinMode(SYSTEM_PIN, INPUT);
+    pinMode(FAN_PIN, OUTPUT);
 
-    current = readCurrent();
-
-    voltage = readVoltage();
-
-    temperature = readTemperature();
+    digitalWrite(FAN_PIN, LOW);
 
 
-    previousCurrent = current;
+    // --------------------------------------------------------
+    // WIFI CONNECTION
+    // --------------------------------------------------------
 
-    previousTemperature = temperature;
-
-    baselineCurrent = current;
-
-
-    Serial.println();
-
-    Serial.println(
-        "Initial sensor readings:"
+    WiFi.begin(
+        WIFI_SSID,
+        WIFI_PASSWORD
     );
 
-    printData();
+    Serial.print("Connecting to WiFi");
+
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        delay(500);
+
+        Serial.print(".");
+    }
+
+    Serial.println();
+    Serial.println("WiFi Connected!");
+
+    Serial.print("ESP32 IP Address: ");
+    Serial.println(WiFi.localIP());
+
+    Serial.println();
 }
 
 
 // ============================================================
-// LOOP
+// READ VOLTAGE
+// ============================================================
+
+float readVoltage()
+{
+    int rawValue = analogRead(VOLTAGE_PIN);
+
+    float adcVoltage =
+        (rawValue / 4095.0) * 3.3;
+
+    /*
+       IMPORTANT:
+
+       This is only the ADC voltage.
+
+       If you are using a voltage divider,
+       multiply by the correct divider ratio.
+
+       Example:
+
+       11.0V battery
+       voltage divider ratio = 4.0
+
+       actual voltage = adcVoltage * 4.0
+    */
+
+    float actualVoltage =
+        adcVoltage * 16.0;
+
+    return actualVoltage;
+}
+
+
+// ============================================================
+// READ CURRENT
+// ============================================================
+
+float readCurrent()
+{
+    int rawValue = analogRead(CURRENT_PIN);
+
+    float adcVoltage =
+        (rawValue / 4095.0) * 3.3;
+
+    /*
+       CURRENT SENSOR CALIBRATION
+
+       This depends on your actual sensor.
+
+       For example, ACS712 / ACS758
+       will have different calibration.
+
+       This value is only a starting point.
+    */
+
+    float sensorZero =
+        1.65;
+
+    float sensitivity =
+        0.100;
+
+    float currentValue =
+        (adcVoltage - sensorZero)
+        / sensitivity;
+
+    if (currentValue < 0)
+    {
+        currentValue =
+            -currentValue;
+    }
+
+    return currentValue;
+}
+
+
+// ============================================================
+// READ TEMPERATURE
+// ============================================================
+
+float readTemperature()
+{
+    /*
+       TEMPORARY ADC TEMPERATURE INPUT
+
+       Replace this function with the actual
+       temperature sensor code later.
+
+       If using DS18B20, we will replace this
+       with OneWire + DallasTemperature.
+    */
+
+    int rawValue =
+        analogRead(TEMPERATURE_PIN);
+
+    float temperatureValue =
+        (rawValue / 4095.0) * 100.0;
+
+    return temperatureValue;
+}
+
+
+// ============================================================
+// DETERMINE SYSTEM STATUS
+// ============================================================
+
+void calculateSystemStatus()
+{
+    if (!systemOn)
+    {
+        systemStatus = "NORMAL";
+
+        fanOn = false;
+
+        digitalWrite(
+            FAN_PIN,
+            LOW
+        );
+
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // TEMPERATURE PROTECTION
+    // --------------------------------------------------------
+
+    if (temperature >= 70)
+    {
+        systemStatus = "CRITICAL";
+
+        fanOn = true;
+    }
+
+    else if (temperature >= 55)
+    {
+        systemStatus = "WARNING";
+
+        fanOn = true;
+    }
+
+    else
+    {
+        systemStatus = "NORMAL";
+
+        fanOn = false;
+    }
+
+
+    // --------------------------------------------------------
+    // FAN
+    // --------------------------------------------------------
+
+    digitalWrite(
+        FAN_PIN,
+        fanOn ? HIGH : LOW
+    );
+}
+
+
+// ============================================================
+// SEND DATA TO RENDER
+// ============================================================
+
+void sendData()
+{
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        Serial.println(
+            "WiFi disconnected!"
+        );
+
+        return;
+    }
+
+
+    HTTPClient http;
+
+
+    // --------------------------------------------------------
+    // START HTTP CONNECTION
+    // --------------------------------------------------------
+
+    http.begin(
+        SERVER_URL
+    );
+
+
+    // --------------------------------------------------------
+    // JSON CONTENT TYPE
+    // --------------------------------------------------------
+
+    http.addHeader(
+        "Content-Type",
+        "application/json"
+    );
+
+
+    // --------------------------------------------------------
+    // CREATE JSON
+    // --------------------------------------------------------
+
+    String jsonData = "{";
+
+    jsonData +=
+        "\"voltage\":" +
+        String(voltage, 2) +
+        ",";
+
+    jsonData +=
+        "\"current\":" +
+        String(current, 2) +
+        ",";
+
+    jsonData +=
+        "\"temperature\":" +
+        String(temperature, 2) +
+        ",";
+
+    jsonData +=
+        "\"current_trend\":\"NORMAL\",";
+
+    jsonData +=
+        "\"temperature_trend\":\"NORMAL\",";
+
+    jsonData +=
+        "\"load_status\":\"" +
+        String(systemOn ? "ON" : "OFF") +
+        "\",";
+
+    jsonData +=
+        "\"motor_status\":\"" +
+        String(systemOn ? "RUNNING" : "OFF") +
+        "\",";
+
+    jsonData +=
+        "\"fan\":" +
+        String(fanOn ? "true" : "false");
+
+    jsonData += "}";
+
+
+    // --------------------------------------------------------
+    // PRINT JSON
+    // --------------------------------------------------------
+
+    Serial.println();
+    Serial.println(
+        "Sending data:"
+    );
+
+    Serial.println(
+        jsonData
+    );
+
+
+    // --------------------------------------------------------
+    // POST
+    // --------------------------------------------------------
+
+    int httpCode =
+        http.POST(
+            jsonData
+        );
+
+
+    // --------------------------------------------------------
+    // SERVER RESPONSE
+    // --------------------------------------------------------
+
+    if (httpCode > 0)
+    {
+        Serial.print(
+            "HTTP Response Code: "
+        );
+
+        Serial.println(
+            httpCode
+        );
+
+
+        String response =
+            http.getString();
+
+        Serial.print(
+            "Server Response: "
+        );
+
+        Serial.println(
+            response
+        );
+    }
+
+    else
+    {
+        Serial.print(
+            "HTTP POST Failed: "
+        );
+
+        Serial.println(
+            http.errorToString(
+                httpCode
+            )
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // CLOSE CONNECTION
+    // --------------------------------------------------------
+
+    http.end();
+}
+
+
+// ============================================================
+// MAIN LOOP
 // ============================================================
 
 void loop()
 {
-    // Read sensors
-    current = readCurrent();
+    // --------------------------------------------------------
+    // READ SYSTEM STATE
+    // --------------------------------------------------------
 
-    voltage = readVoltage();
-
-    temperature = readTemperature();
-
-
-    // Fan
-    if (temperature > -100)
-    {
-        controlFan();
-    }
+    systemOn =
+        digitalRead(
+            SYSTEM_PIN
+        );
 
 
-    // Print
-    printData();
+    // --------------------------------------------------------
+    // READ SENSORS
+    // --------------------------------------------------------
+
+    voltage =
+        readVoltage();
+
+    current =
+        readCurrent();
+
+    temperature =
+        readTemperature();
 
 
-    // Send to backend
+    // --------------------------------------------------------
+    // CALCULATE STATUS + FAN
+    // --------------------------------------------------------
+
+    calculateSystemStatus();
+
+
+    // --------------------------------------------------------
+    // SERIAL MONITOR
+    // --------------------------------------------------------
+
+    Serial.println();
+    Serial.println(
+        "-------------------------------"
+    );
+
+    Serial.print(
+        "System: "
+    );
+
+    Serial.println(
+        systemOn ? "ON" : "OFF"
+    );
+
+
+    Serial.print(
+        "Voltage: "
+    );
+
+    Serial.print(
+        voltage
+    );
+
+    Serial.println(
+        " V"
+    );
+
+
+    Serial.print(
+        "Current: "
+    );
+
+    Serial.print(
+        current
+    );
+
+    Serial.println(
+        " A"
+    );
+
+
+    Serial.print(
+        "Temperature: "
+    );
+
+    Serial.print(
+        temperature
+    );
+
+    Serial.println(
+        " C"
+    );
+
+
+    Serial.print(
+        "Status: "
+    );
+
+    Serial.println(
+        systemStatus
+    );
+
+
+    Serial.print(
+        "Fan: "
+    );
+
+    Serial.println(
+        fanOn ? "ON" : "OFF"
+    );
+
+
+    // --------------------------------------------------------
+    // SEND TO RENDER
+    // --------------------------------------------------------
+
     sendData();
 
 
-    // Save previous values
-    previousCurrent = current;
+    // --------------------------------------------------------
+    // SEND EVERY 3 SECONDS
+    // --------------------------------------------------------
 
-    previousTemperature = temperature;
-
-
-    delay(1000);
+    delay(3000);
 }
