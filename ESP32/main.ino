@@ -76,14 +76,53 @@ const float FAN_OFF_TEMP = 30.0;
 
 float speed = 0.0;
 
-// Maximum simulated speed
 const float MAX_SPEED = 45.0;
 
-// Speed increase per update
-const float SPEED_ACCELERATION = 2.0;
 
-// Speed decrease per update
-const float SPEED_DECELERATION = 3.0;
+// ============================================================
+// SPEED TIMING
+// ============================================================
+//
+// ON:
+// 0 -> 45 km/h in approximately 5 seconds
+//
+// 45 / 5 = 9 km/h per second
+//
+// Therefore:
+// 1 km/h every approximately 111 ms
+//
+// OFF:
+// 45 -> 0 km/h in approximately 7 seconds
+//
+// 45 / 7 = 6.43 km/h per second
+//
+// Therefore:
+// 1 km/h every approximately 156 ms
+// ============================================================
+
+const unsigned long SPEED_ACCELERATION_INTERVAL = 111;
+const unsigned long SPEED_DECELERATION_INTERVAL = 156;
+
+
+// ============================================================
+// RENDER SEND INTERVAL
+// ============================================================
+
+const unsigned long SEND_INTERVAL = 500;
+
+
+// ============================================================
+// SPEED TIMER
+// ============================================================
+
+unsigned long lastSpeedUpdate = 0;
+
+
+// ============================================================
+// RENDER TIMER
+// ============================================================
+
+unsigned long lastSendTime = 0;
 
 
 // ============================================================
@@ -103,6 +142,7 @@ float previousTemperature = 0;
 void setup() {
 
   Serial.begin(115200);
+
 
   // ==========================================================
   // ESP32 ADC
@@ -136,6 +176,7 @@ void setup() {
       RELAY_PIN,
       OUTPUT
   );
+
 
   // Active LOW relay
   // HIGH = FAN OFF
@@ -250,7 +291,6 @@ void setup() {
 
   Serial.println(" C");
 
-
   Serial.println();
 
 
@@ -305,6 +345,12 @@ void setup() {
   );
 
   Serial.println();
+
+
+  // Start timers
+
+  lastSpeedUpdate = millis();
+  lastSendTime = millis();
 }
 
 
@@ -408,37 +454,87 @@ float readTemperature() {
 // ============================================================
 // UPDATE SIMULATED SPEED
 // ============================================================
+//
+// Speed is updated independently from Render.
+//
+// ON:
+// 1 km/h every 111 ms
+//
+// OFF:
+// 1 km/h every 156 ms
+//
+// This gives approximately:
+//
+// 0 -> 45 = 5 seconds
+//
+// 45 -> 0 = 7 seconds
+// ============================================================
 
 void updateSpeed(bool systemON) {
 
-  // ----------------------------------------------------------
-  // SYSTEM ON
-  // ----------------------------------------------------------
+  unsigned long currentMillis = millis();
+
+
+  unsigned long interval;
+
 
   if (systemON) {
 
-    speed += SPEED_ACCELERATION;
-
-
-    if (speed > MAX_SPEED) {
-
-      speed = MAX_SPEED;
-    }
+    interval =
+        SPEED_ACCELERATION_INTERVAL;
   }
-
-
-  // ----------------------------------------------------------
-  // SYSTEM OFF
-  // ----------------------------------------------------------
 
   else {
 
-    speed -= SPEED_DECELERATION;
+    interval =
+        SPEED_DECELERATION_INTERVAL;
+  }
 
 
-    if (speed < 0) {
+  if (
+      currentMillis - lastSpeedUpdate
+      >= interval
+  ) {
 
-      speed = 0;
+    lastSpeedUpdate =
+        currentMillis;
+
+
+    // ========================================================
+    // SYSTEM ON
+    // ========================================================
+
+    if (systemON) {
+
+      if (speed < MAX_SPEED) {
+
+        speed += 1.0;
+
+
+        if (speed > MAX_SPEED) {
+
+          speed = MAX_SPEED;
+        }
+      }
+    }
+
+
+    // ========================================================
+    // SYSTEM OFF
+    // ========================================================
+
+    else {
+
+      if (speed > 0) {
+
+        speed -= 1.0;
+
+
+        if (speed < 0) {
+
+          speed = 0;
+        }
+      }
     }
   }
 }
@@ -449,7 +545,6 @@ void updateSpeed(bool systemON) {
 // ============================================================
 
 void sendDataToRender(
-
     float voltage,
     float current,
     float temperature,
@@ -461,8 +556,8 @@ void sendDataToRender(
     String loadStatus,
     String motorStatus,
     float currentSpeed
-
 ) {
+
 
   // ==========================================================
   // CHECK WIFI
@@ -508,6 +603,7 @@ void sendDataToRender(
   String jsonData =
 
       "{"
+
       "\"voltage\":" +
       String(voltage, 2) +
 
@@ -544,7 +640,7 @@ void sendDataToRender(
       "\"" +
 
       ",\"speed\":" +
-      String(currentSpeed, 2) +
+      String(currentSpeed, 0) +
 
       "}";
 
@@ -636,13 +732,11 @@ void loop() {
 
   // ==========================================================
   // SYSTEM ON / OFF
-  //
-  // Here we assume:
+  // ==========================================================
   //
   // Motor current > 0.05 A = SYSTEM ON
   //
   // Motor current <= 0.05 A = SYSTEM OFF
-  //
   // ==========================================================
 
   bool systemON;
@@ -855,7 +949,7 @@ void loop() {
 
 
   // ==========================================================
-  // UPDATE SIMULATED SPEED
+  // UPDATE SPEED
   // ==========================================================
 
   updateSpeed(
@@ -877,6 +971,7 @@ void loop() {
   Serial.print(
       "System : "
   );
+
 
   if (systemON) {
 
@@ -933,6 +1028,7 @@ void loop() {
       "Cooling Fan     : "
   );
 
+
   if (fanON) {
 
     Serial.println(
@@ -963,7 +1059,7 @@ void loop() {
 
   Serial.print(
       speed,
-      1
+      0
   );
 
   Serial.println(
@@ -977,33 +1073,35 @@ void loop() {
 
 
   // ==========================================================
-  // SEND TO RENDER
+  // SEND TO RENDER EVERY 500 ms
   // ==========================================================
 
-  sendDataToRender(
+  unsigned long currentMillis = millis();
 
-      batteryVoltage,
 
-      current,
+  if (
+      currentMillis - lastSendTime
+      >= SEND_INTERVAL
+  ) {
 
-      temperature,
+    lastSendTime =
+        currentMillis;
 
-      fanON,
 
-      protectionStatus,
-
-      systemON,
-
-      currentTrend,
-
-      temperatureTrend,
-
-      loadStatus,
-
-      motorStatus,
-
-      speed
-  );
+    sendDataToRender(
+        batteryVoltage,
+        current,
+        temperature,
+        fanON,
+        protectionStatus,
+        systemON,
+        currentTrend,
+        temperatureTrend,
+        loadStatus,
+        motorStatus,
+        speed
+    );
+  }
 
 
   // ==========================================================
@@ -1019,8 +1117,8 @@ void loop() {
 
 
   // ==========================================================
-  // WAIT
+  // SMALL LOOP DELAY
   // ==========================================================
 
-  delay(1000);
+  delay(10);
 }
