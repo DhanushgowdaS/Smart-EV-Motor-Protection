@@ -1,6 +1,9 @@
 import streamlit as st
-import time
+import plotly.graph_objects as go
 from datetime import datetime
+from zoneinfo import ZoneInfo
+import math
+
 
 # ============================================================
 # PAGE CONFIGURATION
@@ -13,80 +16,276 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ============================================================
-# CUSTOM STREAMLIT THEME
-# NOTE:
-# No HTML and no unsafe_allow_html are used.
-# ============================================================
-
-st.title("⚡ SMART EV MOTOR PROTECTION SYSTEM")
-
-st.caption("Real-time EV motor monitoring and protection dashboard")
 
 # ============================================================
-# DEMO / SENSOR VALUES
-# Replace these values with your ESP32 data later.
+# REAL-TIME CLOCK - INDIA
 # ============================================================
 
-temperature = 42.0
+india_time = datetime.now(ZoneInfo("Asia/Kolkata"))
+
+current_time = india_time.strftime("%I:%M %p")
+current_date = india_time.strftime("%d-%m-%Y")
+
+
+# ============================================================
+# EV DATA
+# ============================================================
+
+temperature = 42
 current = 2.6
 voltage = 48.6
-speed = 45.0
+
+speed = 45
+gear = "D"
+
+odo = 1256
+range_km = 78
+
 fan_on = True
-
-# ============================================================
-# PROTECTION LIMITS
-# ============================================================
-
-TEMP_WARNING = 40.0
-TEMP_DANGER = 50.0
-
-CURRENT_WARNING = 10.0
-CURRENT_DANGER = 15.0
-
-VOLTAGE_MIN = 40.0
-VOLTAGE_MAX = 55.0
-
-SPEED_MAX = 100.0
+fan_mode = "AUTO MODE"
 
 
 # ============================================================
-# DETERMINE SYSTEM STATUS
+# SYSTEM STATUS
 # ============================================================
 
-if temperature >= TEMP_DANGER:
+if temperature >= 70:
     system_status = "CRITICAL"
-elif temperature >= TEMP_WARNING:
+
+elif temperature >= 55:
     system_status = "WARNING"
+
 else:
     system_status = "NORMAL"
 
 
 # ============================================================
-# HEADER STATUS
+# PAGE STYLE
 # ============================================================
 
-header_col1, header_col2, header_col3 = st.columns([1, 2, 1])
+st.markdown(
+    """
+    <style>
 
-with header_col1:
+        .stApp {
+            background-color: #02070B;
+        }
+
+        [data-testid="stHeader"] {
+            background-color: #02070B;
+        }
+
+        [data-testid="stToolbar"] {
+            visibility: hidden;
+        }
+
+        .block-container {
+            padding-top: 1.5rem;
+            padding-bottom: 1rem;
+            padding-left: 3rem;
+            padding-right: 3rem;
+            max-width: 1500px;
+        }
+
+
+        /* -------------------------------------------------- */
+        /* TITLE */
+        /* -------------------------------------------------- */
+
+        .project-title {
+            text-align: center;
+            white-space: nowrap;
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #F5F5F5;
+            margin-bottom: 5px;
+        }
+
+
+        /* -------------------------------------------------- */
+        /* TOP BAR */
+        /* -------------------------------------------------- */
+
+        .ready-text {
+            font-size: 30px;
+            font-weight: 800;
+            color: #FFFFFF;
+        }
+
+        .clock-text {
+            font-size: 30px;
+            font-weight: 800;
+            text-align: center;
+            color: #FFFFFF;
+        }
+
+        .status-text {
+            font-size: 30px;
+            font-weight: 800;
+            text-align: right;
+            color: #FFFFFF;
+        }
+
+
+        /* -------------------------------------------------- */
+        /* SECTION HEADINGS */
+        /* -------------------------------------------------- */
+
+        .section-heading {
+            font-size: 25px;
+            font-weight: 800;
+            color: #F5F5F5;
+            margin-top: 8px;
+        }
+
+        .sub-heading {
+            font-size: 19px;
+            font-weight: 600;
+            color: #FFFFFF;
+            margin-top: 10px;
+        }
+
+        .big-value {
+            font-size: 38px;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+
+
+        /* -------------------------------------------------- */
+        /* GEAR */
+        /* -------------------------------------------------- */
+
+        .gear-label {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        .gear-value {
+            text-align: center;
+            font-size: 50px;
+            font-weight: 900;
+            color: #FFFFFF;
+        }
+
+
+        /* -------------------------------------------------- */
+        /* REMOVE EXTRA STREAMLIT SPACE */
+        /* -------------------------------------------------- */
+
+        div[data-testid="stVerticalBlock"] > div {
+            gap: 0.25rem;
+        }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# ============================================================
+# SMALL TOP SPACE
+# ============================================================
+
+st.write("")
+
+
+# ============================================================
+# PROJECT TITLE
+# ============================================================
+
+st.markdown(
+    """
+    <div class="project-title">
+        ⚡ SMART EV MOTOR PROTECTION SYSTEM
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.divider()
+
+
+# ============================================================
+# TOP STATUS BAR
+# ============================================================
+
+top_left, top_middle, top_right = st.columns(
+    [4, 3.4, 4.6]
+)
+
+
+# ============================================================
+# READY
+# ============================================================
+
+with top_left:
+
+    st.markdown(
+        """
+        <div class="ready-text">
+            🟢 READY
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# ============================================================
+# REAL-TIME CLOCK
+# ============================================================
+
+with top_middle:
+
+    st.markdown(
+        f"""
+        <div class="clock-text">
+            {current_time}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# ============================================================
+# STATUS
+# ============================================================
+
+with top_right:
+
     if system_status == "NORMAL":
-        st.success("🟢 READY")
-    elif system_status == "WARNING":
-        st.warning("🟡 WARNING")
-    else:
-        st.error("🔴 ALERT")
 
-with header_col2:
-    current_time = datetime.now().strftime("%I:%M %p")
-    st.metric("TIME", current_time)
+        status_html = """
+        <div class="status-text">
+            🟢 STATUS: NORMAL
+        </div>
+        """
 
-with header_col3:
-    if system_status == "NORMAL":
-        st.success("🟢 STATUS: NORMAL")
     elif system_status == "WARNING":
-        st.warning("🟡 STATUS: WARNING")
+
+        status_html = """
+        <div class="status-text">
+            🟠 STATUS: WARNING
+        </div>
+        """
+
     else:
-        st.error("🔴 STATUS: CRITICAL")
+
+        status_html = """
+        <div class="status-text">
+            🔴 STATUS: CRITICAL
+        </div>
+        """
+
+    st.markdown(
+        status_html,
+        unsafe_allow_html=True
+    )
 
 
 st.divider()
@@ -96,239 +295,662 @@ st.divider()
 # MAIN DASHBOARD
 # ============================================================
 
-left, center, right = st.columns([1, 1.5, 1])
+left, center, right = st.columns(
+    [3, 5, 3]
+)
 
 
 # ============================================================
-# LEFT SIDE
+# LEFT SECTION
 # ============================================================
 
 with left:
 
-    st.subheader("🌡️ TEMPERATURE")
+    # ========================================================
+    # TEMPERATURE
+    # ========================================================
 
-    st.metric(
-        label="Motor Temperature",
-        value=f"{temperature:.0f} °C"
+    st.markdown(
+        """
+        <div class="section-heading">
+            🌡️ TEMPERATURE
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    temp_progress = min(
-        max(temperature / TEMP_DANGER, 0.0),
+    # SUBTITLE "Temperature" REMOVED
+
+    st.markdown(
+        f"""
+        <div class="big-value">
+            {temperature} °C
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    temperature_percentage = min(
+        temperature / 100,
         1.0
     )
 
     st.progress(
-        temp_progress,
-        text=f"{temperature:.0f} °C / {TEMP_DANGER:.0f} °C"
+        temperature_percentage
     )
-
-    if temperature >= TEMP_DANGER:
-        st.error("🔥 HIGH TEMPERATURE")
-    elif temperature >= TEMP_WARNING:
-        st.warning("⚠️ Temperature is elevated")
-    else:
-        st.success("Temperature is normal")
 
 
     st.divider()
 
 
-    st.subheader("⚡ CURRENT")
+    # ========================================================
+    # CURRENT
+    # ========================================================
 
-    st.metric(
-        label="Motor Current",
-        value=f"{current:.1f} A"
+    st.markdown(
+        """
+        <div class="section-heading">
+            ⚡ CURRENT
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    current_progress = min(
-        max(current / CURRENT_DANGER, 0.0),
+    # SUBTITLE "Current" REMOVED
+
+    st.markdown(
+        f"""
+        <div class="big-value">
+            {current} A
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    current_percentage = min(
+        current / 10,
         1.0
     )
 
     st.progress(
-        current_progress,
-        text=f"{current:.1f} A / {CURRENT_DANGER:.0f} A"
+        current_percentage
     )
-
-    if current >= CURRENT_DANGER:
-        st.error("🔴 OVERCURRENT")
-    elif current >= CURRENT_WARNING:
-        st.warning("⚠️ High current")
-    else:
-        st.success("Current is normal")
 
 
 # ============================================================
-# CENTER - SPEED
+# CENTER
+# CUSTOM AUTOMOTIVE SPEEDOMETER
 # ============================================================
 
 with center:
 
-    st.subheader("🚗 VEHICLE SPEED")
+    min_speed = 0
+    max_speed = 100
 
-    st.metric(
-        label="Current Speed",
-        value=f"{speed:.0f} km/h"
+
+    # ========================================================
+    # GAUGE GEOMETRY
+    # ========================================================
+
+    start_angle = 210
+    end_angle = -30
+
+    outer_radius = 1.0
+    inner_radius = 0.72
+
+
+    # ========================================================
+    # CONVERT SPEED TO ANGLE
+    # ========================================================
+
+    def speed_to_angle(value):
+
+        fraction = (
+            value - min_speed
+        ) / (
+            max_speed - min_speed
+        )
+
+        return (
+            start_angle
+            + fraction * (
+                end_angle - start_angle
+            )
+        )
+
+
+    # ========================================================
+    # POLAR TO CARTESIAN
+    # ========================================================
+
+    def polar_to_xy(
+        radius,
+        angle
+    ):
+
+        radians = math.radians(angle)
+
+        x = radius * math.cos(radians)
+        y = radius * math.sin(radians)
+
+        return x, y
+
+
+    # ========================================================
+    # CREATE ANNULAR COLOUR SEGMENT
+    # ========================================================
+
+    def create_arc_segment(
+        start_value,
+        end_value,
+        color
+    ):
+
+        points = 50
+
+        outer_points = []
+        inner_points = []
+
+        start = speed_to_angle(
+            start_value
+        )
+
+        end = speed_to_angle(
+            end_value
+        )
+
+        for i in range(points + 1):
+
+            angle = start + (
+                end - start
+            ) * i / points
+
+            x, y = polar_to_xy(
+                outer_radius,
+                angle
+            )
+
+            outer_points.append(
+                (x, y)
+            )
+
+            x, y = polar_to_xy(
+                inner_radius,
+                angle
+            )
+
+            inner_points.append(
+                (x, y)
+            )
+
+
+        polygon = (
+            outer_points
+            + inner_points[::-1]
+        )
+
+        x_values = [
+            p[0]
+            for p in polygon
+        ]
+
+        y_values = [
+            p[1]
+            for p in polygon
+        ]
+
+        return go.Scatter(
+            x=x_values,
+            y=y_values,
+            mode="lines",
+            fill="toself",
+            fillcolor=color,
+            line={
+                "color": color,
+                "width": 0
+            },
+            hoverinfo="skip",
+            showlegend=False
+        )
+
+
+    # ========================================================
+    # CREATE FIGURE
+    # ========================================================
+
+    speedometer = go.Figure()
+
+
+    # ========================================================
+    # GREEN SECTION
+    # 0 - 40
+    # ========================================================
+
+    speedometer.add_trace(
+        create_arc_segment(
+            0,
+            40,
+            "#49E600"
+        )
     )
 
-    speed_progress = min(
-        max(speed / SPEED_MAX, 0.0),
-        1.0
+
+    # ========================================================
+    # BLUE SECTION
+    # 40 - 55
+    # ========================================================
+
+    speedometer.add_trace(
+        create_arc_segment(
+            40,
+            55,
+            "#1479E8"
+        )
     )
 
-    st.progress(
-        speed_progress,
-        text=f"{speed:.0f} km/h / {SPEED_MAX:.0f} km/h"
+
+    # ========================================================
+    # DARK SECTION
+    # 55 - 100
+    # ========================================================
+
+    speedometer.add_trace(
+        create_arc_segment(
+            55,
+            100,
+            "#263442"
+        )
     )
 
-    st.write("")
 
-    if speed < 30:
-        st.info("Low speed")
-    elif speed < 70:
-        st.success("Normal driving speed")
-    else:
-        st.warning("High speed")
+    # ========================================================
+    # WHITE TICK MARKS
+    # ========================================================
 
-    st.write("")
+    for value in range(
+        0,
+        101,
+        5
+    ):
 
-    st.info(
-        "Motor speed is being monitored continuously "
-        "for safe operation."
+        angle = speed_to_angle(
+            value
+        )
+
+
+        if value % 10 == 0:
+
+            tick_outer = 1.17
+            tick_inner = 1.02
+            tick_width = 6
+
+        else:
+
+            tick_outer = 1.14
+            tick_inner = 1.04
+            tick_width = 4
+
+
+        x1, y1 = polar_to_xy(
+            tick_outer,
+            angle
+        )
+
+        x2, y2 = polar_to_xy(
+            tick_inner,
+            angle
+        )
+
+
+        speedometer.add_trace(
+            go.Scatter(
+                x=[
+                    x1,
+                    x2
+                ],
+
+                y=[
+                    y1,
+                    y2
+                ],
+
+                mode="lines",
+
+                line={
+                    "color": "#FFFFFF",
+                    "width": tick_width
+                },
+
+                hoverinfo="skip",
+                showlegend=False
+            )
+        )
+
+
+    # ========================================================
+    # ONLY 0, 50 AND 100 LABELS
+    # ========================================================
+
+    label_values = [
+        0,
+        50,
+        100
+    ]
+
+
+    for value in label_values:
+
+        angle = speed_to_angle(
+            value
+        )
+
+        label_radius = 1.31
+
+        x, y = polar_to_xy(
+            label_radius,
+            angle
+        )
+
+
+        speedometer.add_annotation(
+
+            x=x,
+            y=y,
+
+            text=str(value),
+
+            showarrow=False,
+
+            font={
+                "size": 22,
+                "color": "#FFFFFF",
+                "family": "Arial"
+            },
+
+            xanchor="center",
+            yanchor="middle"
+        )
+
+
+    # ========================================================
+    # CURRENT SPEED INDICATOR
+    # ========================================================
+
+    speed_angle = speed_to_angle(
+        speed
     )
+
+
+    indicator_outer = 1.00
+    indicator_inner = 0.74
+
+
+    x1, y1 = polar_to_xy(
+        indicator_outer,
+        speed_angle
+    )
+
+    x2, y2 = polar_to_xy(
+        indicator_inner,
+        speed_angle
+    )
+
+
+    speedometer.add_trace(
+        go.Scatter(
+
+            x=[
+                x1,
+                x2
+            ],
+
+            y=[
+                y1,
+                y2
+            ],
+
+            mode="lines",
+
+            line={
+                "color": "#FFFFFF",
+                "width": 7
+            },
+
+            hoverinfo="skip",
+            showlegend=False
+        )
+    )
+
+
+    # ========================================================
+    # CENTER SPEED NUMBER
+    # ========================================================
+
+    speedometer.add_annotation(
+
+        x=0,
+        y=0.04,
+
+        text=str(speed),
+
+        showarrow=False,
+
+        font={
+            "size": 76,
+            "color": "#FFFFFF",
+            "family": "Arial"
+        },
+
+        xanchor="center",
+        yanchor="middle"
+    )
+
+
+    # ========================================================
+    # KM/H
+    # ========================================================
+
+    speedometer.add_annotation(
+
+        x=0,
+        y=-0.25,
+
+        text="km/h",
+
+        showarrow=False,
+
+        font={
+            "size": 25,
+            "color": "#FFFFFF",
+            "family": "Arial"
+        },
+
+        xanchor="center",
+        yanchor="middle"
+    )
+
+
+    # ========================================================
+    # SPEEDOMETER LAYOUT
+    # ========================================================
+
+    speedometer.update_layout(
+
+        height=470,
+
+        margin={
+            "l": 10,
+            "r": 10,
+            "t": 10,
+            "b": 5
+        },
+
+        paper_bgcolor="rgba(0,0,0,0)",
+
+        plot_bgcolor="rgba(0,0,0,0)",
+
+        showlegend=False,
+
+        xaxis={
+            "visible": False,
+            "range": [
+                -1.45,
+                1.45
+            ],
+            "fixedrange": True
+        },
+
+        yaxis={
+            "visible": False,
+            "range": [
+                -1.40,
+                1.40
+            ],
+            "fixedrange": True,
+
+            "scaleanchor": "x",
+            "scaleratio": 1
+        }
+    )
+
+
+    # ========================================================
+    # DISPLAY SPEEDOMETER
+    # ========================================================
+
+    st.plotly_chart(
+
+        speedometer,
+
+        use_container_width=True,
+
+        config={
+            "displayModeBar": False,
+            "staticPlot": True
+        }
+    )
+
+
+    # ========================================================
+    # GEAR
+    # ========================================================
+
+    gear_col = st.columns(
+        [2, 1, 2]
+    )
+
+    with gear_col[1]:
+
+        st.markdown(
+            """
+            <div class="gear-label">
+                GEAR
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            f"""
+            <div class="gear-value">
+                {gear}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 
 # ============================================================
-# RIGHT SIDE
+# RIGHT SECTION
 # ============================================================
 
 with right:
 
-    st.subheader("🌀 FAN")
+    # ========================================================
+    # FAN
+    # ========================================================
+
+    st.markdown(
+        """
+        <div class="section-heading">
+            🌀 FAN
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # SUBTITLE "Cooling Fan" REMOVED
+
 
     if fan_on:
-        st.success("ON")
-    else:
-        st.info("OFF")
 
-    st.write("Mode: **AUTO MODE**")
+        st.markdown(
+            """
+            <div class="big-value">
+                ON
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-    if fan_on:
-        st.info("Cooling system active")
     else:
-        st.success("Cooling system standby")
+
+        st.markdown(
+            """
+            <div class="big-value">
+                OFF
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+    st.markdown(
+        f"""
+        <div class="sub-heading">
+            {fan_mode}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
     st.divider()
 
 
-    st.subheader("🔋 VOLTAGE")
+    # ========================================================
+    # VOLTAGE
+    # ========================================================
 
-    st.metric(
-        label="Battery Voltage",
-        value=f"{voltage:.1f} V"
+    st.markdown(
+        """
+        <div class="section-heading">
+            🔋 VOLTAGE
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    voltage_progress = min(
-        max(
-            (voltage - VOLTAGE_MIN) /
-            (VOLTAGE_MAX - VOLTAGE_MIN),
-            0.0
-        ),
+    # SUBTITLE "Battery Voltage" REMOVED
+
+
+    st.markdown(
+        f"""
+        <div class="big-value">
+            {voltage} V
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+    voltage_percentage = min(
+        voltage / 60,
         1.0
     )
 
     st.progress(
-        voltage_progress,
-        text=f"{voltage:.1f} V"
-    )
-
-    if voltage < VOLTAGE_MIN:
-        st.error("🔴 LOW VOLTAGE")
-    elif voltage > VOLTAGE_MAX:
-        st.warning("⚠️ HIGH VOLTAGE")
-    else:
-        st.success("Voltage is normal")
+        voltage_percentage
+    ) 
 
 
-# ============================================================
-# PROTECTION INFORMATION
-# ============================================================
-
-st.divider()
-
-st.subheader("🛡️ MOTOR PROTECTION")
-
-p1, p2, p3, p4 = st.columns(4)
-
-with p1:
-    if temperature < TEMP_WARNING:
-        st.success("🌡️ Temperature\n\nNORMAL")
-    elif temperature < TEMP_DANGER:
-        st.warning("🌡️ Temperature\n\nWARNING")
-    else:
-        st.error("🌡️ Temperature\n\nCRITICAL")
-
-with p2:
-    if current < CURRENT_WARNING:
-        st.success("⚡ Current\n\nNORMAL")
-    elif current < CURRENT_DANGER:
-        st.warning("⚡ Current\n\nWARNING")
-    else:
-        st.error("⚡ Current\n\nCRITICAL")
-
-with p3:
-    if VOLTAGE_MIN <= voltage <= VOLTAGE_MAX:
-        st.success("🔋 Voltage\n\nNORMAL")
-    else:
-        st.error("🔋 Voltage\n\nABNORMAL")
-
-with p4:
-    if fan_on:
-        st.success("🌀 Cooling\n\nACTIVE")
-    else:
-        st.info("🌀 Cooling\n\nSTANDBY")
-
-
-# ============================================================
-# SYSTEM SUMMARY
-# ============================================================
-
-st.divider()
-
-st.subheader("📊 SYSTEM SUMMARY")
-
-summary1, summary2, summary3 = st.columns(3)
-
-with summary1:
-    st.metric(
-        "Temperature",
-        f"{temperature:.0f} °C"
-    )
-
-with summary2:
-    st.metric(
-        "Current",
-        f"{current:.1f} A"
-    )
-
-with summary3:
-    st.metric(
-        "Voltage",
-        f"{voltage:.1f} V"
-    )
-
-
-# ============================================================
-# LAST UPDATE
-# ============================================================
-
-st.divider()
-
-st.caption(
-    f"Last updated: {datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}"
-)
-
-st.caption(
-    "Smart EV Motor Protection System • ESP32 Monitoring"
-)
