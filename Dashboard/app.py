@@ -1,8 +1,9 @@
 import streamlit as st
-import math
+import plotly.graph_objects as go
+from datetime import datetime
 
 # ============================================================
-# PAGE CONFIG
+# PAGE CONFIGURATION
 # ============================================================
 
 st.set_page_config(
@@ -13,8 +14,40 @@ st.set_page_config(
 )
 
 # ============================================================
-# DEMO / SENSOR VALUES
-# Replace these later with your ESP32 values
+# CUSTOM STREAMLIT SETTINGS
+# ============================================================
+
+st.markdown(
+    """
+    <style>
+        .stApp {
+            background-color: #05070A;
+            color: white;
+        }
+
+        [data-testid="stHeader"] {
+            background-color: #05070A;
+        }
+
+        [data-testid="stToolbar"] {
+            display: none;
+        }
+
+        .block-container {
+            padding-top: 2rem;
+            padding-bottom: 1rem;
+        }
+
+        h1, h2, h3, h4, h5, h6, p {
+            color: white;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# ============================================================
+# SENSOR / VEHICLE VALUES
 # ============================================================
 
 speed = 45
@@ -23,814 +56,327 @@ current = 2.6
 battery_voltage = 48.6
 
 gear = "D"
+
 fan_status = "ON"
 fan_mode = "AUTO MODE"
+
 system_status = "NORMAL"
 
 odometer = 1256
 range_km = 78
 
 # ============================================================
-# CSS
-# ============================================================
-
-st.markdown("""
-<style>
-
-html, body, [class*="css"] {
-    font-family: Arial, Helvetica, sans-serif;
-}
-
-.stApp {
-    background: #05070a;
-    color: white;
-}
-
-/* Remove Streamlit top spacing */
-.block-container {
-    padding-top: 25px !important;
-    padding-bottom: 20px !important;
-    max-width: 1500px !important;
-}
-
-/* Hide menu/footer */
-#MainMenu {
-    visibility: hidden;
-}
-
-footer {
-    visibility: hidden;
-}
-
-/* =========================================================
-   TITLE
-   ========================================================= */
-
-.dashboard-title {
-    width: 100%;
-    text-align: center;
-    white-space: nowrap;
-    font-size: 42px;
-    font-weight: 800;
-    letter-spacing: 1px;
-    color: #f4f4f4;
-    margin-top: 5px;
-    margin-bottom: 22px;
-}
-
-.title-icon {
-    color: #ff8a00;
-}
-
-/* =========================================================
-   TOP BAR
-   ========================================================= */
-
-.top-bar {
-    width: 100%;
-    height: 75px;
-    border-top: 1px solid #24282e;
-    border-bottom: 1px solid #24282e;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 35px;
-    box-sizing: border-box;
-}
-
-.ready {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 23px;
-    font-weight: 700;
-}
-
-.ready-dot {
-    width: 18px;
-    height: 18px;
-    background: #5bea64;
-    border-radius: 50%;
-    box-shadow: 0 0 12px rgba(91,234,100,0.6);
-}
-
-.time {
-    font-size: 24px;
-    font-weight: 700;
-}
-
-.status {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 23px;
-    font-weight: 700;
-}
-
-.status-dot {
-    width: 18px;
-    height: 18px;
-    background: #65e870;
-    border-radius: 50%;
-    box-shadow: 0 0 12px rgba(101,232,112,0.6);
-}
-
-/* =========================================================
-   MAIN DASHBOARD
-   ========================================================= */
-
-/*
-IMPORTANT:
-The right column is deliberately pushed farther right.
-This is the main change you were asking for.
-*/
-
-.dashboard {
-    display: grid;
-
-    /*
-       LEFT       CENTER        RIGHT
-       27%        40%           33%
-    */
-
-    grid-template-columns: 27% 40% 33%;
-
-    width: 100%;
-    min-height: 610px;
-
-    margin-top: 28px;
-}
-
-/* =========================================================
-   LEFT SIDE
-   ========================================================= */
-
-.left-panel {
-    padding: 30px 35px 20px 10px;
-    box-sizing: border-box;
-}
-
-.right-panel {
-    /*
-       THIS creates the extra distance
-       between speedometer and right side.
-    */
-
-    padding: 30px 5px 20px 85px;
-    box-sizing: border-box;
-}
-
-.info-box {
-    margin-bottom: 55px;
-}
-
-.section-title {
-    font-size: 23px;
-    font-weight: 800;
-    color: #f5f5f5;
-    margin-bottom: 25px;
-}
-
-.orange {
-    color: #ff9b22;
-}
-
-.blue {
-    color: #4da3ff;
-}
-
-.yellow {
-    color: #e7e04e;
-}
-
-.section-subtitle {
-    font-size: 17px;
-    font-weight: 600;
-    margin-bottom: 15px;
-    color: #eeeeee;
-}
-
-.value {
-    font-size: 32px;
-    font-weight: 800;
-    color: #ffffff;
-}
-
-.progress {
-    height: 7px;
-    width: 100%;
-    background: #30353b;
-    border-radius: 10px;
-    margin-top: 20px;
-    overflow: hidden;
-}
-
-.progress-blue {
-    height: 100%;
-    background: #22a9e8;
-    border-radius: 10px;
-}
-
-/* =========================================================
-   CENTER SPEEDOMETER
-   ========================================================= */
-
-.center-panel {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding-top: 15px;
-}
-
-.speedometer {
-    width: 470px;
-    height: 500px;
-    position: relative;
-}
-
-/* =========================================================
-   RIGHT SIDE
-   ========================================================= */
-
-.right-info {
-    width: 100%;
-}
-
-.right-section {
-    margin-bottom: 48px;
-}
-
-.right-title {
-    font-size: 23px;
-    font-weight: 800;
-    margin-bottom: 25px;
-}
-
-.right-label {
-    font-size: 17px;
-    font-weight: 600;
-    margin-bottom: 18px;
-}
-
-.right-value {
-    font-size: 32px;
-    font-weight: 800;
-    margin-bottom: 18px;
-}
-
-.divider {
-    height: 1px;
-    background: #30343a;
-    width: 95%;
-    margin-top: 28px;
-}
-
-/* =========================================================
-   BOTTOM INFORMATION
-   ========================================================= */
-
-.bottom-info {
-    width: 100%;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    border-top: 1px solid #24282e;
-    margin-top: 5px;
-    padding-top: 25px;
-}
-
-.bottom-item {
-    text-align: center;
-}
-
-.bottom-title {
-    font-size: 19px;
-    font-weight: 700;
-}
-
-.bottom-value {
-    font-size: 30px;
-    font-weight: 800;
-    margin-top: 10px;
-}
-
-/* =========================================================
-   MOBILE
-   ========================================================= */
-
-@media (max-width: 900px) {
-
-    .dashboard-title {
-        font-size: 28px;
-    }
-
-    .dashboard {
-        grid-template-columns: 1fr;
-    }
-
-    .left-panel,
-    .right-panel {
-        padding: 25px;
-    }
-
-    .right-panel {
-        padding-left: 25px;
-    }
-
-    .center-panel {
-        order: -1;
-    }
-
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-
-# ============================================================
 # TITLE
 # ============================================================
 
-st.markdown("""
-<div class="dashboard-title">
-    <span class="title-icon">⚡</span>
-    SMART EV MOTOR PROTECTION SYSTEM
-</div>
-""", unsafe_allow_html=True)
+title_col1, title_col2, title_col3 = st.columns([1, 5, 1])
 
-
-# ============================================================
-# TOP BAR
-# ============================================================
-
-from datetime import datetime
-
-current_time = datetime.now().strftime("%I:%M %p")
-
-st.markdown(f"""
-<div class="top-bar">
-
-    <div class="ready">
-        <div class="ready-dot"></div>
-        READY
-    </div>
-
-    <div class="time">
-        {current_time}
-    </div>
-
-    <div class="status">
-        <div class="status-dot"></div>
-        STATUS: {system_status}
-    </div>
-
-</div>
-""", unsafe_allow_html=True)
-
-
-# ============================================================
-# GAUGE SVG GENERATION
-# ============================================================
-
-def polar_to_cartesian(cx, cy, radius, angle):
-    angle_rad = math.radians(angle)
-
-    return (
-        cx + radius * math.cos(angle_rad),
-        cy + radius * math.sin(angle_rad)
+with title_col2:
+    st.markdown(
+        "<h1 style='text-align:center; white-space:nowrap;'>"
+        "⚡ SMART EV MOTOR PROTECTION SYSTEM"
+        "</h1>",
+        unsafe_allow_html=True
     )
 
+# ============================================================
+# TOP STATUS BAR
+# ============================================================
 
-def describe_arc(cx, cy, radius, start_angle, end_angle):
+top1, top2, top3 = st.columns([1.5, 1.5, 2])
 
-    start_x, start_y = polar_to_cartesian(
-        cx, cy, radius, start_angle
+with top1:
+    st.success("🟢  READY")
+
+with top2:
+    current_time = datetime.now().strftime("%I:%M %p")
+    st.markdown(
+        f"<h3 style='text-align:center;'>{current_time}</h3>",
+        unsafe_allow_html=True
     )
 
-    end_x, end_y = polar_to_cartesian(
-        cx, cy, radius, end_angle
+with top3:
+    st.markdown(
+        f"<h3 style='text-align:right;'>🟢 STATUS: {system_status}</h3>",
+        unsafe_allow_html=True
     )
 
-    large_arc = 1 if abs(end_angle - start_angle) > 180 else 0
+st.divider()
 
-    return (
-        f"M {start_x:.2f} {start_y:.2f} "
-        f"A {radius} {radius} 0 {large_arc} 1 "
-        f"{end_x:.2f} {end_y:.2f}"
-    )
+# ============================================================
+# MAIN DASHBOARD
+#
+# IMPORTANT:
+# The spacer column between gauge and right panel is
+# intentionally added to create MORE GAP.
+# ============================================================
 
-
-# Gauge configuration
-cx = 235
-cy = 250
-radius = 170
-
-# Gauge starts at 150° and ends at 390°
-start_angle = 150
-end_angle = 390
-
-# Value position
-value_angle = start_angle + (
-    (speed / 100) * (end_angle - start_angle)
+left, center, spacer, right = st.columns(
+    [1.05, 2.20, 0.55, 1.45],
+    gap="small"
 )
 
 # ============================================================
-# SVG TICKS
+# LEFT SIDE
 # ============================================================
 
-ticks = ""
+with left:
 
-# 21 ticks from 0 to 100
-for i in range(21):
+    # --------------------------------------------------------
+    # TEMPERATURE
+    # --------------------------------------------------------
 
-    value = i * 5
+    st.subheader("🌡️ TEMPERATURE")
 
-    angle = start_angle + (
-        (value / 100) * (end_angle - start_angle)
+    st.caption("Temperature")
+
+    st.markdown(
+        f"<h2>{temperature} °C</h2>",
+        unsafe_allow_html=True
     )
 
-    # Alternating long and short ticks
-    if i % 2 == 0:
-        outer_r = 195
-        inner_r = 174
-        stroke_width = 5
-    else:
-        outer_r = 190
-        inner_r = 178
-        stroke_width = 3
-
-    x1, y1 = polar_to_cartesian(
-        cx, cy, inner_r, angle
+    st.progress(
+        min(max(temperature / 100, 0.0), 1.0)
     )
 
-    x2, y2 = polar_to_cartesian(
-        cx, cy, outer_r, angle
+    st.write("")
+
+    # --------------------------------------------------------
+    # CURRENT
+    # --------------------------------------------------------
+
+    st.subheader("⚡ CURRENT")
+
+    st.caption("Current")
+
+    st.markdown(
+        f"<h2>{current} A</h2>",
+        unsafe_allow_html=True
     )
 
-    ticks += f"""
-    <line
-        x1="{x1:.2f}"
-        y1="{y1:.2f}"
-        x2="{x2:.2f}"
-        y2="{y2:.2f}"
-        stroke="#f4f4f4"
-        stroke-width="{stroke_width}"
-        stroke-linecap="round"
-    />
-    """
-
+    st.progress(
+        min(max(current / 10, 0.0), 1.0)
+    )
 
 # ============================================================
-# SPEED VALUE POSITION
+# CENTER GAUGE
 # ============================================================
 
-# Green arc
-green_end = start_angle + (
-    min(speed, 50) / 100
-) * (end_angle - start_angle)
+with center:
 
-# Blue zone around 45-55
-blue_start = start_angle + (
-    45 / 100
-) * (end_angle - start_angle)
+    # ========================================================
+    # GAUGE
+    #
+    # 0 ------------- 50 ------------- 100
+    #
+    # Green = safe
+    # Blue  = normal operating zone
+    # Grey  = remaining range
+    # ========================================================
 
-blue_end = start_angle + (
-    55 / 100
-) * (end_angle - start_angle)
+    gauge = go.Figure(
+        go.Indicator(
+            mode="gauge+number",
+            value=speed,
 
+            number={
+                "font": {
+                    "size": 60,
+                    "color": "white"
+                },
+                "suffix": ""
+            },
 
-# ============================================================
-# SVG
-# ============================================================
+            gauge={
+                "shape": "angular",
 
-gauge_html = f"""
+                "axis": {
+                    "range": [0, 100],
+                    "tickmode": "linear",
+                    "tick0": 0,
+                    "dtick": 5,
 
-<div class="speedometer">
+                    "tickfont": {
+                        "size": 14,
+                        "color": "white"
+                    },
 
-<svg
-    width="470"
-    height="500"
-    viewBox="0 0 470 500"
-    xmlns="http://www.w3.org/2000/svg"
->
+                    "tickcolor": "white",
+                    "tickwidth": 2
+                },
 
-    <!-- =================================================
-         BACKGROUND GAUGE
-         ================================================= -->
+                "bar": {
+                    "color": "#1689E8",
+                    "thickness": 0.35
+                },
 
-    <path
-        d="{describe_arc(
-            cx, cy, radius,
-            start_angle,
-            end_angle
-        )}"
-        fill="none"
-        stroke="#202832"
-        stroke-width="52"
-        stroke-linecap="round"
-    />
+                "bgcolor": "#11161C",
 
-    <!-- =================================================
-         GREEN SAFE AREA
-         ================================================= -->
+                "borderwidth": 0,
 
-    <path
-        d="{describe_arc(
-            cx, cy, radius,
-            start_angle,
-            green_end
-        )}"
-        fill="none"
-        stroke="#6ee900"
-        stroke-width="52"
-        stroke-linecap="butt"
-    />
+                "steps": [
+                    {
+                        "range": [0, 45],
+                        "color": "#6BE900"
+                    },
+                    {
+                        "range": [45, 55],
+                        "color": "#1689E8"
+                    },
+                    {
+                        "range": [55, 100],
+                        "color": "#202832"
+                    }
+                ]
+            }
+        )
+    )
 
-    <!-- =================================================
-         BLUE AREA 45-55
-         ================================================= -->
+    # --------------------------------------------------------
+    # GAUGE LAYOUT
+    # --------------------------------------------------------
 
-    <path
-        d="{describe_arc(
-            cx, cy, radius,
-            blue_start,
-            blue_end
-        )}"
-        fill="none"
-        stroke="#1689e8"
-        stroke-width="52"
-        stroke-linecap="butt"
-    />
+    gauge.update_layout(
+        height=470,
+        margin=dict(
+            l=10,
+            r=10,
+            t=20,
+            b=20
+        ),
 
-    <!-- =================================================
-         TICK MARKS
-         ================================================= -->
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
 
-    {ticks}
+        font={
+            "color": "white"
+        }
+    )
 
+    st.plotly_chart(
+        gauge,
+        use_container_width=True,
+        config={
+            "displayModeBar": False
+        }
+    )
 
-    <!-- =================================================
-         0 LABEL
-         ================================================= -->
+    # km/h BELOW the speed
+    st.markdown(
+        "<h3 style='text-align:center; margin-top:-45px;'>km/h</h3>",
+        unsafe_allow_html=True
+    )
 
-    <text
-        x="60"
-        y="435"
-        fill="#ffffff"
-        font-size="20"
-        font-weight="700"
-        text-anchor="middle"
-    >
-        0
-    </text>
+    # --------------------------------------------------------
+    # GEAR
+    # --------------------------------------------------------
 
-
-    <!-- =================================================
-         50 LABEL
-         ================================================= -->
-
-    <text
-        x="235"
-        y="55"
-        fill="#ffffff"
-        font-size="20"
-        font-weight="700"
-        text-anchor="middle"
-    >
-        50
-    </text>
-
-
-    <!-- =================================================
-         100 LABEL
-         ================================================= -->
-
-    <text
-        x="410"
-        y="435"
-        fill="#ffffff"
-        font-size="20"
-        font-weight="700"
-        text-anchor="middle"
-    >
-        100
-    </text>
-
-
-    <!-- =================================================
-         CENTER SPEED
-         ================================================= -->
-
-    <text
-        x="235"
-        y="275"
-        fill="#ffffff"
-        font-size="68"
-        font-weight="800"
-        text-anchor="middle"
-    >
-        {speed}
-    </text>
-
-
-    <!-- =================================================
-         KM/H DIRECTLY BELOW 45
-         ================================================= -->
-
-    <text
-        x="235"
-        y="310"
-        fill="#ffffff"
-        font-size="25"
-        font-weight="600"
-        text-anchor="middle"
-    >
-        km/h
-    </text>
-
-</svg>
-
-</div>
-"""
-
+    st.markdown(
+        f"<h3 style='text-align:center; margin-top:30px;'>"
+        f"GEAR<br><b>{gear}</b>"
+        f"</h3>",
+        unsafe_allow_html=True
+    )
 
 # ============================================================
-# DASHBOARD HTML
+# SPACER
+#
+# Nothing is placed here.
+#
+# This column is what creates the extra distance between
+# the gauge and FAN/VOLTAGE.
 # ============================================================
 
-dashboard_html = f"""
+with spacer:
+    st.write("")
 
-<div class="dashboard">
+# ============================================================
+# RIGHT SIDE
+# ============================================================
 
-    <!-- =================================================
-         LEFT PANEL
-         ================================================= -->
+with right:
 
-    <div class="left-panel">
+    # --------------------------------------------------------
+    # FAN
+    # --------------------------------------------------------
 
-        <div class="info-box">
+    st.subheader("🌀 FAN")
 
-            <div class="section-title orange">
-                🌡 TEMPERATURE
-            </div>
+    st.caption("Cooling Fan")
 
-            <div class="section-subtitle">
-                Temperature
-            </div>
+    st.markdown(
+        f"<h2>{fan_status}</h2>",
+        unsafe_allow_html=True
+    )
 
-            <div class="value">
-                {temperature} °C
-            </div>
+    st.markdown(
+        f"<h4>{fan_mode}</h4>",
+        unsafe_allow_html=True
+    )
 
-            <div class="progress">
-                <div
-                    class="progress-blue"
-                    style="width:{min(temperature,100)}%;"
-                ></div>
-            </div>
+    st.divider()
 
-        </div>
+    # --------------------------------------------------------
+    # VOLTAGE
+    # --------------------------------------------------------
 
+    st.subheader("🔋 VOLTAGE")
 
-        <div class="info-box">
+    st.caption("Battery Voltage")
 
-            <div class="section-title orange">
-                ⚡ CURRENT
-            </div>
+    st.markdown(
+        f"<h2>{battery_voltage} V</h2>",
+        unsafe_allow_html=True
+    )
 
-            <div class="section-subtitle">
-                Current
-            </div>
+    st.progress(
+        min(max(battery_voltage / 60, 0.0), 1.0)
+    )
 
-            <div class="value">
-                {current} A
-            </div>
+# ============================================================
+# BOTTOM SECTION
+# ============================================================
 
-            <div class="progress">
-                <div
-                    class="progress-blue"
-                    style="width:{min(current * 20,100)}%;"
-                ></div>
-            </div>
+st.divider()
 
-        </div>
+bottom1, bottom2 = st.columns(2)
 
-    </div>
+# ============================================================
+# ODOMETER
+# ============================================================
 
+with bottom1:
 
-    <!-- =================================================
-         CENTER
-         ================================================= -->
+    st.markdown(
+        "<h3 style='text-align:center;'>💡 ODO</h3>",
+        unsafe_allow_html=True
+    )
 
-    <div class="center-panel">
+    st.markdown(
+        f"<h2 style='text-align:center;'>{odometer} km</h2>",
+        unsafe_allow_html=True
+    )
 
-        {gauge_html}
+# ============================================================
+# RANGE
+# ============================================================
 
-    </div>
+with bottom2:
 
+    st.markdown(
+        "<h3 style='text-align:center;'>🛣️ RANGE</h3>",
+        unsafe_allow_html=True
+    )
 
-    <!-- =================================================
-         RIGHT PANEL
-         ================================================= -->
+    st.markdown(
+        f"<h2 style='text-align:center;'>{range_km} km</h2>",
+        unsafe_allow_html=True
+    )
 
-    <div class="right-panel">
+# ============================================================
+# LAST UPDATED
+# ============================================================
 
-        <div class="right-info">
-
-
-            <!-- FAN -->
-
-            <div class="right-section">
-
-                <div class="right-title blue">
-                    🌀 FAN
-                </div>
-
-                <div class="right-label">
-                    Cooling Fan
-                </div>
-
-                <div class="right-value">
-                    {fan_status}
-                </div>
-
-                <div class="right-label">
-                    {fan_mode}
-                </div>
-
-                <div class="divider"></div>
-
-            </div>
-
-
-            <!-- VOLTAGE -->
-
-            <div class="right-section">
-
-                <div class="right-title yellow">
-                    🔋 VOLTAGE
-                </div>
-
-                <div class="right-label">
-                    Battery Voltage
-                </div>
-
-                <div class="right-value">
-                    {battery_voltage} V
-                </div>
-
-                <div class="progress">
-                    <div
-                        class="progress-blue"
-                        style="width:{min((battery_voltage / 60) * 100,100)}%;"
-                    ></div>
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-
-<!-- =====================================================
-     BOTTOM INFORMATION
-     ===================================================== -->
-
-<div class="bottom-info">
-
-    <div class="bottom-item">
-
-        <div class="bottom-title">
-            💡 ODO
-        </div>
-
-        <div class="bottom-value">
-            {odometer} km
-        </div>
-
-    </div>
-
-
-    <div class="bottom-item">
-
-        <div class="bottom-title">
-            🛣 RANGE
-        </div>
-
-        <div class="bottom-value">
-            {range_km} km
-        </div>
-
-    </div>
-
-</div>
-
-"""
-
-
-st.markdown(
-    dashboard_html,
-    unsafe_allow_html=True
+st.caption(
+    f"Last updated: {datetime.now().strftime('%d-%m-%Y %I:%M %p')}"
 )
