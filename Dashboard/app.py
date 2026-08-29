@@ -14,90 +14,129 @@ st.set_page_config(
 )
 
 # ============================================================
-# CUSTOM STREAMLIT SETTINGS
+# DATA
+# Replace these values later with your real ESP32 data
+# ============================================================
+
+temperature = 42
+current = 2.6
+speed = 45
+battery_voltage = 48.6
+
+fan_status = "ON"
+fan_mode = "AUTO MODE"
+
+gear = "D"
+odometer = 1256
+range_km = 78
+
+# ============================================================
+# GENERAL STREAMLIT SETTINGS
 # ============================================================
 
 st.markdown(
     """
     <style>
-        .stApp {
-            background-color: #05070A;
-            color: white;
-        }
+    .block-container {
+        padding-top: 2rem;
+        padding-left: 3rem;
+        padding-right: 3rem;
+        max-width: 1500px;
+    }
 
-        [data-testid="stHeader"] {
-            background-color: #05070A;
-        }
+    [data-testid="stMetricValue"] {
+        font-size: 2rem;
+    }
 
-        [data-testid="stToolbar"] {
-            display: none;
-        }
-
-        .block-container {
-            padding-top: 2rem;
-            padding-bottom: 1rem;
-        }
-
-        h1, h2, h3, h4, h5, h6, p {
-            color: white;
-        }
     </style>
     """,
     unsafe_allow_html=True
 )
 
 # ============================================================
-# SENSOR / VEHICLE VALUES
+# HEADER
 # ============================================================
 
-speed = 45
-temperature = 42
-current = 2.6
-battery_voltage = 48.6
+header_left, header_right = st.columns([5.5, 1.5])
 
-gear = "D"
-
-fan_status = "ON"
-fan_mode = "AUTO MODE"
-
-system_status = "NORMAL"
-
-odometer = 1256
-range_km = 78
-
-# ============================================================
-# TITLE
-# ============================================================
-
-title_col1, title_col2, title_col3 = st.columns([1, 5, 1])
-
-with title_col2:
+with header_left:
     st.markdown(
-        "<h1 style='text-align:center; white-space:nowrap;'>"
-        "⚡ SMART EV MOTOR PROTECTION SYSTEM"
-        "</h1>",
+        """
+        <h1 style="
+            font-size: 42px;
+            font-weight: 800;
+            margin-bottom: 5px;
+            white-space: nowrap;
+        ">
+        ⚡ SMART EV MOTOR PROTECTION SYSTEM
+        </h1>
+        """,
         unsafe_allow_html=True
     )
 
+with header_right:
+    st.markdown(
+        """
+        <div style="
+            text-align:right;
+            padding-top:15px;
+            font-size:22px;
+            font-weight:700;
+        ">
+        🟢 STATUS: NORMAL
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+st.divider()
+
 # ============================================================
-# TOP STATUS BAR
+# TIME / READY STATUS
 # ============================================================
 
-top1, top2, top3 = st.columns([1.5, 1.5, 2])
+ready_col, time_col, status_col = st.columns([1.5, 2, 1.5])
 
-with top1:
-    st.success("🟢  READY")
+with ready_col:
+    st.markdown(
+        """
+        <div style="
+            font-size:22px;
+            font-weight:700;
+        ">
+        🟢 READY
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-with top2:
+with time_col:
     current_time = datetime.now().strftime("%I:%M %p")
+
     st.markdown(
-        f"<h3 style='text-align:center;'>{current_time}</h3>",
+        f"""
+        <div style="
+            text-align:center;
+            font-size:27px;
+            font-weight:700;
+        ">
+        {current_time}
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
-with top3:
+with status_col:
     st.markdown(
-        f"<h3 style='text-align:right;'>🟢 STATUS: {system_status}</h3>",
+        """
+        <div style="
+            text-align:right;
+            font-size:22px;
+            font-weight:700;
+        ">
+        🟢 STATUS: NORMAL
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
@@ -106,32 +145,56 @@ st.divider()
 # ============================================================
 # MAIN DASHBOARD
 #
-# IMPORTANT:
-# The spacer column between gauge and right panel is
-# intentionally added to create MORE GAP.
+# LEFT       = Temperature + Current
+# CENTER     = Speed Gauge
+# RIGHT      = Fan + Voltage
+#
+# Wider gap is created by using 5 columns.
 # ============================================================
 
-left, center, spacer, right = st.columns(
-    [1.05, 2.20, 0.55, 1.45],
-    gap="small"
+left_col, gap1, center_col, gap2, right_col = st.columns(
+    [1.4, 0.35, 2.7, 0.45, 1.5]
 )
 
 # ============================================================
 # LEFT SIDE
 # ============================================================
 
-with left:
+with left_col:
 
-    # --------------------------------------------------------
-    # TEMPERATURE
-    # --------------------------------------------------------
-
-    st.subheader("🌡️ TEMPERATURE")
-
-    st.caption("Temperature")
+    # ---------------- TEMPERATURE ----------------
 
     st.markdown(
-        f"<h2>{temperature} °C</h2>",
+        """
+        <h2 style="font-size:27px;">
+        🌡️ TEMPERATURE
+        </h2>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        """
+        <p style="
+            font-size:18px;
+            margin-bottom:0px;
+        ">
+        Temperature
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        f"""
+        <h1 style="
+            font-size:38px;
+            margin-top:5px;
+            margin-bottom:5px;
+        ">
+        {temperature} °C
+        </h1>
+        """,
         unsafe_allow_html=True
     )
 
@@ -139,18 +202,41 @@ with left:
         min(max(temperature / 100, 0.0), 1.0)
     )
 
-    st.write("")
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    # --------------------------------------------------------
-    # CURRENT
-    # --------------------------------------------------------
-
-    st.subheader("⚡ CURRENT")
-
-    st.caption("Current")
+    # ---------------- CURRENT ----------------
 
     st.markdown(
-        f"<h2>{current} A</h2>",
+        """
+        <h2 style="font-size:27px;">
+        ⚡ CURRENT
+        </h2>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        """
+        <p style="
+            font-size:18px;
+            margin-bottom:0px;
+        ">
+        Current
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        f"""
+        <h1 style="
+            font-size:38px;
+            margin-top:5px;
+            margin-bottom:5px;
+        ">
+        {current} A
+        </h1>
+        """,
         unsafe_allow_html=True
     )
 
@@ -159,75 +245,78 @@ with left:
     )
 
 # ============================================================
-# CENTER GAUGE
+# CENTER SPEED GAUGE
 # ============================================================
 
-with center:
+with center_col:
 
-    # ========================================================
+    # --------------------------------------------------------
     # GAUGE
-    #
-    # 0 ------------- 50 ------------- 100
-    #
-    # Green = safe
-    # Blue  = normal operating zone
-    # Grey  = remaining range
-    # ========================================================
+    # --------------------------------------------------------
 
-    gauge = go.Figure(
+    fig = go.Figure(
         go.Indicator(
             mode="gauge+number",
             value=speed,
 
             number={
                 "font": {
-                    "size": 60,
+                    "size": 62,
                     "color": "white"
                 },
                 "suffix": ""
             },
 
             gauge={
-                "shape": "angular",
-
                 "axis": {
                     "range": [0, 100],
-                    "tickmode": "linear",
-                    "tick0": 0,
-                    "dtick": 5,
+
+                    # ONLY 0, 50 and 100
+                    "tickmode": "array",
+                    "tickvals": [0, 50, 100],
+                    "ticktext": ["0", "50", "100"],
 
                     "tickfont": {
-                        "size": 14,
+                        "size": 17,
                         "color": "white"
                     },
 
-                    "tickcolor": "white",
-                    "tickwidth": 2
+                    "tickwidth": 4,
+                    "tickcolor": "white"
                 },
 
                 "bar": {
-                    "color": "#1689E8",
-                    "thickness": 0.35
+                    "color": "#18AEEF",
+                    "thickness": 0.28
                 },
 
-                "bgcolor": "#11161C",
+                "bgcolor": "#151A20",
 
                 "borderwidth": 0,
 
                 "steps": [
                     {
-                        "range": [0, 45],
-                        "color": "#6BE900"
+                        "range": [0, 40],
+                        "color": "#7CFF00"
                     },
                     {
-                        "range": [45, 55],
-                        "color": "#1689E8"
+                        "range": [40, 55],
+                        "color": "#159FEA"
                     },
                     {
                         "range": [55, 100],
-                        "color": "#202832"
+                        "color": "#27313D"
                     }
-                ]
+                ],
+
+                "threshold": {
+                    "line": {
+                        "color": "white",
+                        "width": 5
+                    },
+                    "thickness": 0.75,
+                    "value": speed
+                }
             }
         )
     )
@@ -236,17 +325,17 @@ with center:
     # GAUGE LAYOUT
     # --------------------------------------------------------
 
-    gauge.update_layout(
+    fig.update_layout(
         height=470,
+
         margin=dict(
-            l=10,
-            r=10,
-            t=20,
-            b=20
+            l=15,
+            r=15,
+            t=50,
+            b=35
         ),
 
         paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
 
         font={
             "color": "white"
@@ -254,63 +343,107 @@ with center:
     )
 
     st.plotly_chart(
-        gauge,
+        fig,
         use_container_width=True,
         config={
             "displayModeBar": False
         }
     )
 
-    # km/h BELOW the speed
+    # km/h directly below 45
     st.markdown(
-        "<h3 style='text-align:center; margin-top:-45px;'>km/h</h3>",
+        """
+        <div style="
+            text-align:center;
+            font-size:24px;
+            font-weight:600;
+            margin-top:-45px;
+        ">
+        km/h
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
-    # --------------------------------------------------------
-    # GEAR
-    # --------------------------------------------------------
-
+    # Gear
     st.markdown(
-        f"<h3 style='text-align:center; margin-top:30px;'>"
-        f"GEAR<br><b>{gear}</b>"
-        f"</h3>",
+        f"""
+        <div style="
+            text-align:center;
+            margin-top:55px;
+        ">
+            <div style="
+                font-size:20px;
+                font-weight:600;
+            ">
+            GEAR
+            </div>
+
+            <div style="
+                font-size:45px;
+                font-weight:800;
+            ">
+            {gear}
+            </div>
+        </div>
+        """,
         unsafe_allow_html=True
     )
-
-# ============================================================
-# SPACER
-#
-# Nothing is placed here.
-#
-# This column is what creates the extra distance between
-# the gauge and FAN/VOLTAGE.
-# ============================================================
-
-with spacer:
-    st.write("")
 
 # ============================================================
 # RIGHT SIDE
 # ============================================================
 
-with right:
+with right_col:
 
     # --------------------------------------------------------
     # FAN
     # --------------------------------------------------------
 
-    st.subheader("🌀 FAN")
-
-    st.caption("Cooling Fan")
-
     st.markdown(
-        f"<h2>{fan_status}</h2>",
+        """
+        <h2 style="font-size:27px;">
+        🌀 FAN
+        </h2>
+        """,
         unsafe_allow_html=True
     )
 
     st.markdown(
-        f"<h4>{fan_mode}</h4>",
+        """
+        <p style="
+            font-size:18px;
+            margin-bottom:5px;
+        ">
+        Cooling Fan
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        f"""
+        <h1 style="
+            font-size:38px;
+            margin-top:0px;
+            margin-bottom:5px;
+        ">
+        {fan_status}
+        </h1>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        f"""
+        <p style="
+            font-size:18px;
+            font-weight:600;
+            margin-top:0px;
+        ">
+        {fan_mode}
+        </p>
+        """,
         unsafe_allow_html=True
     )
 
@@ -320,12 +453,37 @@ with right:
     # VOLTAGE
     # --------------------------------------------------------
 
-    st.subheader("🔋 VOLTAGE")
-
-    st.caption("Battery Voltage")
+    st.markdown(
+        """
+        <h2 style="font-size:27px;">
+        🔋 VOLTAGE
+        </h2>
+        """,
+        unsafe_allow_html=True
+    )
 
     st.markdown(
-        f"<h2>{battery_voltage} V</h2>",
+        """
+        <p style="
+            font-size:18px;
+            margin-bottom:5px;
+        ">
+        Battery Voltage
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        f"""
+        <h1 style="
+            font-size:38px;
+            margin-top:0px;
+            margin-bottom:5px;
+        ">
+        {battery_voltage} V
+        </h1>
+        """,
         unsafe_allow_html=True
     )
 
@@ -334,42 +492,60 @@ with right:
     )
 
 # ============================================================
-# BOTTOM SECTION
+# BOTTOM INFORMATION
 # ============================================================
 
 st.divider()
 
-bottom1, bottom2 = st.columns(2)
+bottom_left, bottom_right = st.columns([1, 1])
 
-# ============================================================
-# ODOMETER
-# ============================================================
-
-with bottom1:
+with bottom_left:
 
     st.markdown(
-        "<h3 style='text-align:center;'>💡 ODO</h3>",
+        f"""
+        <div style="
+            text-align:center;
+        ">
+            <div style="
+                font-size:22px;
+                font-weight:700;
+            ">
+            💡 ODO
+            </div>
+
+            <div style="
+                font-size:32px;
+                font-weight:800;
+            ">
+            {odometer} km
+            </div>
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
-    st.markdown(
-        f"<h2 style='text-align:center;'>{odometer} km</h2>",
-        unsafe_allow_html=True
-    )
-
-# ============================================================
-# RANGE
-# ============================================================
-
-with bottom2:
+with bottom_right:
 
     st.markdown(
-        "<h3 style='text-align:center;'>🛣️ RANGE</h3>",
-        unsafe_allow_html=True
-    )
+        f"""
+        <div style="
+            text-align:center;
+        ">
+            <div style="
+                font-size:22px;
+                font-weight:700;
+            ">
+            🛣️ RANGE
+            </div>
 
-    st.markdown(
-        f"<h2 style='text-align:center;'>{range_km} km</h2>",
+            <div style="
+                font-size:32px;
+                font-weight:800;
+            ">
+            {range_km} km
+            </div>
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
@@ -377,6 +553,14 @@ with bottom2:
 # LAST UPDATED
 # ============================================================
 
-st.caption(
-    f"Last updated: {datetime.now().strftime('%d-%m-%Y %I:%M %p')}"
+st.markdown(
+    f"""
+    <p style="
+        font-size:14px;
+        margin-top:25px;
+    ">
+    Last updated: {datetime.now().strftime("%d-%m-%Y %I:%M %p")}
+    </p>
+    """,
+    unsafe_allow_html=True
 )
