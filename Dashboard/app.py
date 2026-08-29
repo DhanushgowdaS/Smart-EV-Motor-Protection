@@ -693,7 +693,7 @@ with right:
     st.markdown(
         """
         <div style="
-            padding-left: 35px;
+            padding-left: 60px;
         ">
         """,
         unsafe_allow_html=True
