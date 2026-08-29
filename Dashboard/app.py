@@ -199,10 +199,10 @@ with top_right:
             🔴 STATUS: CRITICAL
         </div>
         """
-    elif system_status == "COOLING ACTIVE":
+    elif system_status == "WARNING":
         status_html = """
         <div class="status-text">
-            🔵 STATUS: COOLING ACTIVE
+            🔵 STATUS: WARNING
         </div>
         """
     elif system_status == "LOAD RISING":
