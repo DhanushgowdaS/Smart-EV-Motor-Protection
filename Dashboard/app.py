@@ -3,6 +3,7 @@ import plotly.graph_objects as go
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import time
+import math
 
 
 # ============================================================
@@ -60,76 +61,130 @@ else:
 
 
 # ============================================================
-# CUSTOM CSS
+# PAGE STYLE
 # ============================================================
 
 st.markdown(
     """
     <style>
 
-        /* ====================================================
-           MAIN BACKGROUND
-           ==================================================== */
+        /* -------------------------------------------------- */
+        /* MAIN APPLICATION */
+        /* -------------------------------------------------- */
 
         .stApp {
-            background-color: #02070b;
+            background-color: #02070B;
         }
 
         [data-testid="stHeader"] {
-            background-color: #02070b;
+            background-color: #02070B;
         }
 
         [data-testid="stToolbar"] {
             visibility: hidden;
         }
 
-
-        /* ====================================================
-           PAGE WIDTH / SPACING
-           ==================================================== */
-
         .block-container {
             padding-top: 1.5rem;
             padding-bottom: 1rem;
-            padding-left: 4rem;
-            padding-right: 4rem;
+            padding-left: 3rem;
+            padding-right: 3rem;
             max-width: 1500px;
         }
 
 
-        /* ====================================================
-           SINGLE-LINE PROJECT TITLE
-           ==================================================== */
+        /* -------------------------------------------------- */
+        /* TITLE */
+        /* -------------------------------------------------- */
 
         .project-title {
-            white-space: nowrap;
             text-align: center;
-            font-size: 34px;
+            white-space: nowrap;
+            font-size: 36px;
             font-weight: 800;
+            letter-spacing: 1px;
+            color: #F5F5F5;
+            margin-bottom: 5px;
+        }
+
+
+        /* -------------------------------------------------- */
+        /* TOP BAR */
+        /* -------------------------------------------------- */
+
+        .ready-text {
+            font-size: 23px;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        .clock-text {
+            font-size: 30px;
+            font-weight: 800;
+            text-align: center;
+            color: #FFFFFF;
+        }
+
+        .status-text {
+            font-size: 23px;
+            font-weight: 700;
+            text-align: right;
+            color: #FFFFFF;
+        }
+
+
+        /* -------------------------------------------------- */
+        /* SECTION HEADINGS */
+        /* -------------------------------------------------- */
+
+        .section-heading {
+            font-size: 25px;
+            font-weight: 800;
+            color: #F5F5F5;
+            margin-top: 8px;
+        }
+
+        .sub-heading {
+            font-size: 19px;
+            font-weight: 600;
             color: #FFFFFF;
             margin-top: 10px;
+        }
+
+        .big-value {
+            font-size: 38px;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin-top: 5px;
             margin-bottom: 10px;
         }
 
 
-        /* ====================================================
-           STATUS BAR
-           ==================================================== */
+        /* -------------------------------------------------- */
+        /* GEAR */
+        /* -------------------------------------------------- */
 
-        .status-right {
-            text-align: right;
-            white-space: nowrap;
+        .gear-label {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        .gear-value {
+            text-align: center;
+            font-size: 50px;
+            font-weight: 900;
+            color: #FFFFFF;
         }
 
 
-        /* ====================================================
-           SPEEDOMETER CENTER
-           ==================================================== */
+        /* -------------------------------------------------- */
+        /* REMOVE EXTRA STREAMLIT SPACE */
+        /* -------------------------------------------------- */
 
-        .speed-unit {
-            font-size: 25px;
-            color: #FFFFFF;
-            font-weight: 500;
+        div[data-testid="stVerticalBlock"] > div {
+            gap: 0.25rem;
         }
 
     </style>
@@ -158,20 +213,15 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
 st.divider()
 
 
 # ============================================================
 # TOP STATUS BAR
-#
-# READY  -> LEFT
-# CLOCK  -> CENTER
-# STATUS -> MORE RIGHT
 # ============================================================
 
 top_left, top_middle, top_right = st.columns(
-    [4, 2.5, 5]
+    [4, 3, 5]
 )
 
 
@@ -182,7 +232,12 @@ top_left, top_middle, top_right = st.columns(
 with top_left:
 
     st.markdown(
-        "### 🟢 READY"
+        """
+        <div class="ready-text">
+            🟢 READY
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 
@@ -193,48 +248,50 @@ with top_left:
 with top_middle:
 
     st.markdown(
-        f"## {current_time}"
+        f"""
+        <div class="clock-text">
+            {current_time}
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 
 # ============================================================
 # STATUS
+# MOVED MORE TO THE RIGHT
 # ============================================================
 
 with top_right:
 
     if system_status == "NORMAL":
 
-        st.markdown(
-            """
-            <div class="status-right">
-                <h3>🟢 STATUS: NORMAL</h3>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        status_html = """
+        <div class="status-text">
+            🟢 STATUS: NORMAL
+        </div>
+        """
 
     elif system_status == "WARNING":
 
-        st.markdown(
-            """
-            <div class="status-right">
-                <h3>🟠 STATUS: WARNING</h3>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        status_html = """
+        <div class="status-text">
+            🟠 STATUS: WARNING
+        </div>
+        """
 
     else:
 
-        st.markdown(
-            """
-            <div class="status-right">
-                <h3>🔴 STATUS: CRITICAL</h3>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        status_html = """
+        <div class="status-text">
+            🔴 STATUS: CRITICAL
+        </div>
+        """
+
+    st.markdown(
+        status_html,
+        unsafe_allow_html=True
+    )
 
 
 st.divider()
@@ -260,15 +317,30 @@ with left:
     # ========================================================
 
     st.markdown(
-        "## 🌡️ TEMPERATURE"
+        """
+        <div class="section-heading">
+            🌡️ TEMPERATURE
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
     st.markdown(
-        "### Temperature"
+        """
+        <div class="sub-heading">
+            Temperature
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
     st.markdown(
-        f"# {temperature} °C"
+        f"""
+        <div class="big-value">
+            {temperature} °C
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
     temperature_percentage = min(
@@ -289,15 +361,30 @@ with left:
     # ========================================================
 
     st.markdown(
-        "## ⚡ CURRENT"
+        """
+        <div class="section-heading">
+            ⚡ CURRENT
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
     st.markdown(
-        "### Current"
+        """
+        <div class="sub-heading">
+            Current
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
     st.markdown(
-        f"# {current} A"
+        f"""
+        <div class="big-value">
+            {current} A
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
     current_percentage = min(
@@ -311,13 +398,14 @@ with left:
 
 
 # ============================================================
-# CENTER - AUTOMOTIVE SPEEDOMETER
+# CENTER
+# CUSTOM AUTOMOTIVE SPEEDOMETER
 # ============================================================
 
 with center:
 
     # --------------------------------------------------------
-    # SPEED LIMIT
+    # SPEED RANGE
     # --------------------------------------------------------
 
     min_speed = 0
@@ -325,221 +413,418 @@ with center:
 
 
     # --------------------------------------------------------
-    # CREATE SPEEDOMETER
+    # GAUGE GEOMETRY
+    #
+    # 240 DEGREE AUTOMOTIVE STYLE GAUGE
+    #
+    # LEFT  = 0
+    # TOP   = 50
+    # RIGHT = 100
     # --------------------------------------------------------
+
+    start_angle = 210
+    end_angle = -30
+
+    outer_radius = 1.0
+    inner_radius = 0.72
+
+
+    # ========================================================
+    # CONVERT SPEED TO ANGLE
+    # ========================================================
+
+    def speed_to_angle(value):
+
+        fraction = (
+            value - min_speed
+        ) / (
+            max_speed - min_speed
+        )
+
+        return (
+            start_angle
+            + fraction * (
+                end_angle - start_angle
+            )
+        )
+
+
+    # ========================================================
+    # POLAR TO CARTESIAN
+    # ========================================================
+
+    def polar_to_xy(
+        radius,
+        angle
+    ):
+
+        radians = math.radians(angle)
+
+        x = radius * math.cos(radians)
+        y = radius * math.sin(radians)
+
+        return x, y
+
+
+    # ========================================================
+    # CREATE ANNULAR COLOUR SEGMENT
+    # ========================================================
+
+    def create_arc_segment(
+        start_value,
+        end_value,
+        color
+    ):
+
+        points = 50
+
+        outer_points = []
+        inner_points = []
+
+        start = speed_to_angle(
+            start_value
+        )
+
+        end = speed_to_angle(
+            end_value
+        )
+
+        for i in range(points + 1):
+
+            angle = start + (
+                end - start
+            ) * i / points
+
+            x, y = polar_to_xy(
+                outer_radius,
+                angle
+            )
+
+            outer_points.append(
+                (x, y)
+            )
+
+            x, y = polar_to_xy(
+                inner_radius,
+                angle
+            )
+
+            inner_points.append(
+                (x, y)
+            )
+
+
+        polygon = (
+            outer_points
+            + inner_points[::-1]
+        )
+
+        x_values = [
+            p[0]
+            for p in polygon
+        ]
+
+        y_values = [
+            p[1]
+            for p in polygon
+        ]
+
+        return go.Scatter(
+            x=x_values,
+            y=y_values,
+            mode="lines",
+            fill="toself",
+            fillcolor=color,
+            line={
+                "color": color,
+                "width": 0
+            },
+            hoverinfo="skip",
+            showlegend=False
+        )
+
+
+    # ========================================================
+    # CREATE FIGURE
+    # ========================================================
 
     speedometer = go.Figure()
 
 
     # ========================================================
-    # GAUGE
+    # GREEN SECTION
+    # 0 - 40
     # ========================================================
 
     speedometer.add_trace(
-        go.Indicator(
-
-            mode="gauge+number",
-
-            value=speed,
-
-
-            # ------------------------------------------------
-            # CENTER SPEED NUMBER
-            # ------------------------------------------------
-
-            number={
-                "font": {
-                    "size": 78,
-                    "color": "#FFFFFF"
-                },
-
-                "valueformat": ".0f"
-            },
+        create_arc_segment(
+            0,
+            40,
+            "#49E600"
+        )
+    )
 
 
-            # ------------------------------------------------
-            # IMPORTANT:
-            #
-            # NO TITLE HERE
-            #
-            # We will manually place "km/h"
-            # directly underneath 45.
-            # ------------------------------------------------
+    # ========================================================
+    # BLUE SECTION
+    # 40 - 55
+    # ========================================================
 
-            gauge={
-
-                # =================================================
-                # SPEED RANGE
-                # =================================================
-
-                "axis": {
-
-                    "range": [
-                        min_speed,
-                        max_speed
-                    ],
+    speedometer.add_trace(
+        create_arc_segment(
+            40,
+            55,
+            "#1479E8"
+        )
+    )
 
 
-                    # =================================================
-                    # WHITE TICK MARKS
-                    # =================================================
+    # ========================================================
+    # DARK SECTION
+    # 55 - 100
+    # ========================================================
 
-                    "tickmode": "array",
-
-                    "tickvals": [
-                        0,
-                        5,
-                        10,
-                        15,
-                        20,
-                        25,
-                        30,
-                        35,
-                        40,
-                        45,
-                        50,
-                        55,
-                        60,
-                        65,
-                        70,
-                        75,
-                        80,
-                        85,
-                        90,
-                        95,
-                        100
-                    ],
+    speedometer.add_trace(
+        create_arc_segment(
+            55,
+            100,
+            "#263442"
+        )
+    )
 
 
-                    # Only 0, 50 and 100 are displayed
-                    # as numbers.
+    # ========================================================
+    # WHITE TICK MARKS
+    #
+    # BIG
+    # SMALL
+    # BIG
+    # SMALL
+    #
+    # EVERY 5 KM/H
+    # BIG TICK = 10 KM/H
+    # SMALL TICK = 5 KM/H
+    # ========================================================
 
-                    "ticktext": [
-                        "0",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "50",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "",
-                        "100"
-                    ],
+    for value in range(
+        0,
+        101,
+        5
+    ):
 
+        angle = speed_to_angle(
+            value
+        )
 
-                    "tickfont": {
-                        "size": 22,
-                        "color": "#FFFFFF"
-                    },
+        # --------------------------------------------
+        # BIG TICK
+        # --------------------------------------------
 
-                    "tickcolor": "#FFFFFF",
+        if value % 10 == 0:
 
-                    "tickwidth": 4,
+            tick_outer = 1.17
+            tick_inner = 1.02
+            tick_width = 6
 
-                    "ticklen": 14
-                },
+        # --------------------------------------------
+        # SMALL TICK
+        # --------------------------------------------
 
+        else:
 
-                # =================================================
-                # NO OUTER BORDER
-                # =================================================
-
-                "borderwidth": 0,
-
-                "bordercolor": "#02070B",
+            tick_outer = 1.14
+            tick_inner = 1.04
+            tick_width = 4
 
 
-                # =================================================
-                # COLOUR SECTIONS
-                # =================================================
+        x1, y1 = polar_to_xy(
+            tick_outer,
+            angle
+        )
 
-                "steps": [
-
-                    # ------------------------------------------------
-                    # GREEN
-                    # 0 - 40
-                    # ------------------------------------------------
-
-                    {
-                        "range": [
-                            0,
-                            40
-                        ],
-
-                        "color": "#49E600"
-                    },
+        x2, y2 = polar_to_xy(
+            tick_inner,
+            angle
+        )
 
 
-                    # ------------------------------------------------
-                    # BLUE
-                    # 40 - 55
-                    # ------------------------------------------------
-
-                    {
-                        "range": [
-                            40,
-                            55
-                        ],
-
-                        "color": "#1479E8"
-                    },
-
-
-                    # ------------------------------------------------
-                    # DARK
-                    # 55 - 100
-                    # ------------------------------------------------
-
-                    {
-                        "range": [
-                            55,
-                            100
-                        ],
-
-                        "color": "#263442"
-                    }
+        speedometer.add_trace(
+            go.Scatter(
+                x=[
+                    x1,
+                    x2
                 ],
 
+                y=[
+                    y1,
+                    y2
+                ],
 
-                # =================================================
-                # CURRENT SPEED WHITE MARKER
-                # =================================================
+                mode="lines",
 
-                "threshold": {
-
-                    "line": {
-                        "color": "#FFFFFF",
-                        "width": 5
-                    },
-
-                    "thickness": 0.85,
-
-                    "value": speed
+                line={
+                    "color": "#FFFFFF",
+                    "width": tick_width
                 },
 
-
-                # =================================================
-                # REMOVE DEFAULT NEEDLE
-                # =================================================
-
-                "bar": {
-                    "color": "rgba(0,0,0,0)",
-                    "thickness": 0
-                }
-            }
+                hoverinfo="skip",
+                showlegend=False
+            )
         )
+
+
+    # ========================================================
+    # NUMBER LABELS
+    #
+    # ONLY:
+    # 0
+    # 50
+    # 100
+    # ========================================================
+
+    label_values = [
+        0,
+        50,
+        100
+    ]
+
+
+    for value in label_values:
+
+        angle = speed_to_angle(
+            value
+        )
+
+        label_radius = 1.31
+
+        x, y = polar_to_xy(
+            label_radius,
+            angle
+        )
+
+
+        speedometer.add_annotation(
+
+            x=x,
+            y=y,
+
+            text=str(value),
+
+            showarrow=False,
+
+            font={
+                "size": 22,
+                "color": "#FFFFFF",
+                "family": "Arial"
+            },
+
+            xanchor="center",
+            yanchor="middle"
+        )
+
+
+    # ========================================================
+    # CURRENT SPEED INDICATOR
+    #
+    # WHITE LINE AT CURRENT SPEED
+    # ========================================================
+
+    speed_angle = speed_to_angle(
+        speed
+    )
+
+
+    # White indicator
+    indicator_outer = 1.00
+    indicator_inner = 0.74
+
+
+    x1, y1 = polar_to_xy(
+        indicator_outer,
+        speed_angle
+    )
+
+    x2, y2 = polar_to_xy(
+        indicator_inner,
+        speed_angle
+    )
+
+
+    speedometer.add_trace(
+        go.Scatter(
+
+            x=[
+                x1,
+                x2
+            ],
+
+            y=[
+                y1,
+                y2
+            ],
+
+            mode="lines",
+
+            line={
+                "color": "#FFFFFF",
+                "width": 7
+            },
+
+            hoverinfo="skip",
+            showlegend=False
+        )
+    )
+
+
+    # ========================================================
+    # CENTER SPEED NUMBER
+    # ========================================================
+
+    speedometer.add_annotation(
+
+        x=0,
+        y=0.04,
+
+        text=str(speed),
+
+        showarrow=False,
+
+        font={
+            "size": 76,
+            "color": "#FFFFFF",
+            "family": "Arial"
+        },
+
+        xanchor="center",
+        yanchor="middle"
+    )
+
+
+    # ========================================================
+    # KM/H
+    #
+    # DIRECTLY UNDER 45
+    # NOT ABOVE
+    # NOT OVERLAPPING
+    # ========================================================
+
+    speedometer.add_annotation(
+
+        x=0,
+        y=-0.25,
+
+        text="km/h",
+
+        showarrow=False,
+
+        font={
+            "size": 25,
+            "color": "#FFFFFF",
+            "family": "Arial"
+        },
+
+        xanchor="center",
+        yanchor="middle"
     )
 
 
@@ -552,48 +837,38 @@ with center:
         height=470,
 
         margin={
-            "l": 15,
-            "r": 15,
+            "l": 10,
+            "r": 10,
             "t": 10,
-            "b": 0
+            "b": 5
         },
 
         paper_bgcolor="rgba(0,0,0,0)",
 
         plot_bgcolor="rgba(0,0,0,0)",
 
-        font={
-            "color": "#FFFFFF"
-        }
-    )
+        showlegend=False,
 
-
-    # ========================================================
-    # IMPORTANT:
-    #
-    # PUT km/h DIRECTLY UNDER 45
-    # ========================================================
-
-    speedometer.add_annotation(
-
-        x=0.5,
-
-        y=0.39,
-
-        xref="paper",
-
-        yref="paper",
-
-        text="km/h",
-
-        showarrow=False,
-
-        font={
-            "size": 25,
-            "color": "#FFFFFF"
+        xaxis={
+            "visible": False,
+            "range": [
+                -1.45,
+                1.45
+            ],
+            "fixedrange": True
         },
 
-        align="center"
+        yaxis={
+            "visible": False,
+            "range": [
+                -1.40,
+                1.40
+            ],
+            "fixedrange": True,
+
+            "scaleanchor": "x",
+            "scaleratio": 1
+        }
     )
 
 
@@ -625,11 +900,21 @@ with center:
     with gear_col[1]:
 
         st.markdown(
-            "### GEAR"
+            """
+            <div class="gear-label">
+                GEAR
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
         st.markdown(
-            f"# {gear}"
+            f"""
+            <div class="gear-value">
+                {gear}
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
 
@@ -644,27 +929,54 @@ with right:
     # ========================================================
 
     st.markdown(
-        "## 🌀 FAN"
+        """
+        <div class="section-heading">
+            🌀 FAN
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
     st.markdown(
-        "### Cooling Fan"
+        """
+        <div class="sub-heading">
+            Cooling Fan
+        </div>
+        """,
+        unsafe_allow_html=True
     )
+
 
     if fan_on:
 
         st.markdown(
-            "# ON"
+            """
+            <div class="big-value">
+                ON
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
     else:
 
         st.markdown(
-            "# OFF"
+            """
+            <div class="big-value">
+                OFF
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
+
     st.markdown(
-        f"**{fan_mode}**"
+        f"""
+        <div class="sub-heading">
+            {fan_mode}
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 
@@ -676,16 +988,32 @@ with right:
     # ========================================================
 
     st.markdown(
-        "## 🔋 VOLTAGE"
+        """
+        <div class="section-heading">
+            🔋 VOLTAGE
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
     st.markdown(
-        "### Battery Voltage"
+        """
+        <div class="sub-heading">
+            Battery Voltage
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
     st.markdown(
-        f"# {voltage} V"
+        f"""
+        <div class="big-value">
+            {voltage} V
+        </div>
+        """,
+        unsafe_allow_html=True
     )
+
 
     voltage_percentage = min(
         voltage / 60,
@@ -720,11 +1048,21 @@ empty_left, empty_middle, odo_col, range_col = st.columns(
 with odo_col:
 
     st.markdown(
-        "## 💡 ODO"
+        """
+        <div class="section-heading">
+            💡 ODO
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
     st.markdown(
-        f"# {odo} km"
+        f"""
+        <div class="big-value">
+            {odo} km
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 
@@ -735,11 +1073,21 @@ with odo_col:
 with range_col:
 
     st.markdown(
-        "## 🛣️ RANGE"
+        """
+        <div class="section-heading">
+            🛣️ RANGE
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
     st.markdown(
-        f"# {range_km} km"
+        f"""
+        <div class="big-value">
+            {range_km} km
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 
