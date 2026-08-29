@@ -99,10 +99,29 @@ else:
 
 
 # ============================================================
-# FIXED DATA FOR NOW
+# SPEED
+# ============================================================
+#
+# Currently there is no speed sensor / speed value coming
+# from ESP32.
+#
+# So 45 is kept as the current value.
+#
+# Later, when ESP32 sends:
+#
+# "speed": 45
+#
+# this automatically uses that value.
 # ============================================================
 
-speed = 45
+speed = float(
+    data.get("speed", 45)
+) if data is not None else 0
+
+
+# ============================================================
+# ODOMETER AND RANGE
+# ============================================================
 
 odo = 1256
 
@@ -230,25 +249,6 @@ st.markdown(
 
 
         /* -------------------------------------------------- */
-        /* GEAR */
-        /* -------------------------------------------------- */
-
-        .gear-label {
-            text-align: center;
-            font-size: 20px;
-            font-weight: 700;
-            color: #FFFFFF;
-        }
-
-        .gear-value {
-            text-align: center;
-            font-size: 50px;
-            font-weight: 900;
-            color: #FFFFFF;
-        }
-
-
-        /* -------------------------------------------------- */
         /* REMOVE EXTRA STREAMLIT SPACE */
         /* -------------------------------------------------- */
 
@@ -307,6 +307,7 @@ with top_left:
     else:
 
         ready_text = "🔴 NOT READY"
+
 
     st.markdown(
         f"""
@@ -396,6 +397,7 @@ with top_right:
         </div>
         """
 
+
     st.markdown(
         status_html,
         unsafe_allow_html=True
@@ -433,6 +435,7 @@ with left:
         unsafe_allow_html=True
     )
 
+
     st.markdown(
         f"""
         <div class="big-value">
@@ -442,10 +445,12 @@ with left:
         unsafe_allow_html=True
     )
 
+
     temperature_percentage = min(
         temperature / 100,
         1.0
     )
+
 
     st.progress(
         temperature_percentage
@@ -468,6 +473,7 @@ with left:
         unsafe_allow_html=True
     )
 
+
     st.markdown(
         f"""
         <div class="big-value">
@@ -477,10 +483,12 @@ with left:
         unsafe_allow_html=True
     )
 
+
     current_percentage = min(
         current / 10,
         1.0
     )
+
 
     st.progress(
         current_percentage
@@ -507,6 +515,16 @@ with center:
 
     outer_radius = 1.0
     inner_radius = 0.72
+
+
+    # ========================================================
+    # KEEP SPEED INSIDE GAUGE RANGE
+    # ========================================================
+
+    speed = max(
+        min_speed,
+        min(speed, max_speed)
+    )
 
 
     # ========================================================
@@ -599,15 +617,18 @@ with center:
             + inner_points[::-1]
         )
 
+
         x_values = [
             p[0]
             for p in polygon
         ]
 
+
         y_values = [
             p[1]
             for p in polygon
         ]
+
 
         return go.Scatter(
             x=x_values,
@@ -633,6 +654,7 @@ with center:
 
     # ========================================================
     # GREEN SECTION
+    # 0 - 40
     # ========================================================
 
     speedometer.add_trace(
@@ -646,6 +668,7 @@ with center:
 
     # ========================================================
     # BLUE SECTION
+    # 40 - 55
     # ========================================================
 
     speedometer.add_trace(
@@ -659,6 +682,7 @@ with center:
 
     # ========================================================
     # DARK SECTION
+    # 55 - 100
     # ========================================================
 
     speedometer.add_trace(
@@ -684,6 +708,7 @@ with center:
             value
         )
 
+
         if value % 10 == 0:
 
             tick_outer = 1.17
@@ -701,6 +726,7 @@ with center:
             tick_outer,
             angle
         )
+
 
         x2, y2 = polar_to_xy(
             tick_inner,
@@ -796,6 +822,7 @@ with center:
         speed_angle
     )
 
+
     x2, y2 = polar_to_xy(
         indicator_inner,
         speed_angle
@@ -837,7 +864,7 @@ with center:
         x=0,
         y=0.04,
 
-        text=str(speed),
+        text=f"{speed:.0f}",
 
         showarrow=False,
 
@@ -1022,10 +1049,16 @@ with right:
     )
 
 
+    # ========================================================
+    # VOLTAGE RANGE
+    # 0 - 12 V
+    # ========================================================
+
     voltage_percentage = min(
         voltage / 12,
         1.0
     )
+
 
     st.progress(
         voltage_percentage
@@ -1079,6 +1112,7 @@ with range_col:
 # ============================================================
 
 st.divider()
+
 
 st.caption(
     f"Last updated: {current_date} {current_time}"
