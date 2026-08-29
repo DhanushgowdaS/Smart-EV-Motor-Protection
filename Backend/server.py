@@ -2,6 +2,11 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from datetime import datetime
 
+
+# ============================================================
+# FASTAPI APPLICATION
+# ============================================================
+
 app = FastAPI(
     title="EV Motor Protection API"
 )
@@ -19,6 +24,12 @@ class SensorData(BaseModel):
 
     temperature: float
 
+    fan: bool
+
+    status: str
+
+    system: bool
+
     current_trend: str
 
     temperature_trend: str
@@ -26,8 +37,6 @@ class SensorData(BaseModel):
     load_status: str
 
     motor_status: str
-
-    fan: bool
 
 
 # ============================================================
@@ -42,15 +51,19 @@ latest_data = {
 
     "temperature": 0.0,
 
+    "fan": False,
+
+    "status": "NORMAL",
+
+    "system": False,
+
     "current_trend": "STABLE",
 
     "temperature_trend": "STABLE",
 
-    "load_status": "NORMAL",
+    "load_status": "LOAD STABLE",
 
-    "motor_status": "NORMAL",
-
-    "fan": False,
+    "motor_status": "OFF",
 
     "timestamp": None
 }
@@ -81,7 +94,7 @@ def receive_data(data: SensorData):
 
 
 # ============================================================
-# STREAMLIT GETS LATEST DATA
+# GET LATEST DATA
 # ============================================================
 
 @app.get("/data")
@@ -99,10 +112,8 @@ def home():
 
     return {
 
-        "system":
-        "EV Motor Protection API",
+        "system": "EV Motor Protection API",
 
-        "status":
-        "running"
+        "status": "running"
 
     }
