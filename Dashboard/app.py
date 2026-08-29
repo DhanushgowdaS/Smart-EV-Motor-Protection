@@ -831,34 +831,7 @@ with center:
     )
 
 
-    # ========================================================
-    # GEAR
-    # ========================================================
-
-    gear_col = st.columns(
-        [2, 1, 2]
-    )
-
-    with gear_col[1]:
-
-        st.markdown(
-            """
-            <div class="gear-label">
-                GEAR
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        st.markdown(
-            f"""
-            <div class="gear-value">
-                {gear}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
+   
 
 # ============================================================
 # RIGHT SECTION
