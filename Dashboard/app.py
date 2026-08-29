@@ -3,7 +3,6 @@ import plotly.graph_objects as go
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import time
-import math
 
 
 # ============================================================
@@ -51,140 +50,85 @@ fan_mode = "AUTO MODE"
 # ============================================================
 
 if temperature >= 70:
+
     system_status = "CRITICAL"
 
 elif temperature >= 55:
+
     system_status = "WARNING"
 
 else:
+
     system_status = "NORMAL"
 
 
 # ============================================================
-# PAGE STYLE
+# DARK DASHBOARD STYLE
 # ============================================================
 
 st.markdown(
     """
     <style>
 
-        /* -------------------------------------------------- */
-        /* MAIN APPLICATION */
-        /* -------------------------------------------------- */
+        /* ----------------------------------------------------
+           MAIN APPLICATION BACKGROUND
+        ---------------------------------------------------- */
 
         .stApp {
             background-color: #02070B;
+            color: #FFFFFF;
         }
+
+
+        /* ----------------------------------------------------
+           STREAMLIT HEADER
+        ---------------------------------------------------- */
 
         [data-testid="stHeader"] {
             background-color: #02070B;
         }
 
+
+        /* ----------------------------------------------------
+           HIDE TOOLBAR
+        ---------------------------------------------------- */
+
         [data-testid="stToolbar"] {
             visibility: hidden;
         }
 
+
+        /* ----------------------------------------------------
+           MAIN CONTAINER
+        ---------------------------------------------------- */
+
         .block-container {
+
             padding-top: 1.5rem;
             padding-bottom: 1rem;
-            padding-left: 3rem;
-            padding-right: 3rem;
+
+            padding-left: 3.5rem;
+            padding-right: 3.5rem;
+
             max-width: 1500px;
         }
 
 
-        /* -------------------------------------------------- */
-        /* TITLE */
-        /* -------------------------------------------------- */
+        /* ----------------------------------------------------
+           REMOVE EXTRA STREAMLIT SPACING
+        ---------------------------------------------------- */
 
-        .project-title {
-            text-align: center;
-            white-space: nowrap;
-            font-size: 36px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            color: #F5F5F5;
-            margin-bottom: 5px;
+        div[data-testid="stVerticalBlock"] {
+            gap: 0.45rem;
         }
 
 
-        /* -------------------------------------------------- */
-        /* TOP BAR */
-        /* -------------------------------------------------- */
+        /* ----------------------------------------------------
+           DIVIDER
+        ---------------------------------------------------- */
 
-        .ready-text {
-            font-size: 23px;
-            font-weight: 700;
-            color: #FFFFFF;
-        }
-
-        .clock-text {
-            font-size: 30px;
-            font-weight: 800;
-            text-align: center;
-            color: #FFFFFF;
-        }
-
-        .status-text {
-            font-size: 23px;
-            font-weight: 700;
-            text-align: right;
-            color: #FFFFFF;
-        }
-
-
-        /* -------------------------------------------------- */
-        /* SECTION HEADINGS */
-        /* -------------------------------------------------- */
-
-        .section-heading {
-            font-size: 25px;
-            font-weight: 800;
-            color: #F5F5F5;
-            margin-top: 8px;
-        }
-
-        .sub-heading {
-            font-size: 19px;
-            font-weight: 600;
-            color: #FFFFFF;
-            margin-top: 10px;
-        }
-
-        .big-value {
-            font-size: 38px;
-            font-weight: 800;
-            color: #FFFFFF;
-            margin-top: 5px;
-            margin-bottom: 10px;
-        }
-
-
-        /* -------------------------------------------------- */
-        /* GEAR */
-        /* -------------------------------------------------- */
-
-        .gear-label {
-            text-align: center;
-            font-size: 20px;
-            font-weight: 700;
-            color: #FFFFFF;
-        }
-
-        .gear-value {
-            text-align: center;
-            font-size: 50px;
-            font-weight: 900;
-            color: #FFFFFF;
-        }
-
-
-        /* -------------------------------------------------- */
-        /* REMOVE EXTRA STREAMLIT SPACE */
-        /* -------------------------------------------------- */
-
-        div[data-testid="stVerticalBlock"] > div {
-            gap: 0.25rem;
+        hr {
+            border-color: #26313A;
         }
 
     </style>
@@ -194,7 +138,7 @@ st.markdown(
 
 
 # ============================================================
-# SMALL TOP SPACE
+# TOP SPACE
 # ============================================================
 
 st.write("")
@@ -204,14 +148,25 @@ st.write("")
 # PROJECT TITLE
 # ============================================================
 
-st.markdown(
-    """
-    <div class="project-title">
-        ⚡ SMART EV MOTOR PROTECTION SYSTEM
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+title_col = st.columns([1, 6, 1])
+
+with title_col[1]:
+
+    st.markdown(
+        """
+        <h1 style="
+            white-space: nowrap;
+            text-align: center;
+            font-size: 32px;
+            margin-bottom: 5px;
+            color: #FFFFFF;
+        ">
+            ⚡ SMART EV MOTOR PROTECTION SYSTEM
+        </h1>
+        """,
+        unsafe_allow_html=True
+    )
+
 
 st.divider()
 
@@ -233,8 +188,16 @@ with top_left:
 
     st.markdown(
         """
-        <div class="ready-text">
-            🟢 READY
+        <div style="
+            font-size: 23px;
+            font-weight: 700;
+            margin-top: 5px;
+        ">
+            <span style="
+                color: #49E600;
+                font-size: 25px;
+            ">●</span>
+            READY
         </div>
         """,
         unsafe_allow_html=True
@@ -249,7 +212,11 @@ with top_middle:
 
     st.markdown(
         f"""
-        <div class="clock-text">
+        <div style="
+            text-align: center;
+            font-size: 25px;
+            font-weight: 700;
+        ">
             {current_time}
         </div>
         """,
@@ -258,38 +225,27 @@ with top_middle:
 
 
 # ============================================================
-# STATUS
-# MOVED MORE TO THE RIGHT
+# SYSTEM STATUS
+# MOVED SLIGHTLY TO THE RIGHT
 # ============================================================
 
 with top_right:
 
-    if system_status == "NORMAL":
-
-        status_html = """
-        <div class="status-text">
-            🟢 STATUS: NORMAL
-        </div>
-        """
-
-    elif system_status == "WARNING":
-
-        status_html = """
-        <div class="status-text">
-            🟠 STATUS: WARNING
-        </div>
-        """
-
-    else:
-
-        status_html = """
-        <div class="status-text">
-            🔴 STATUS: CRITICAL
-        </div>
-        """
-
     st.markdown(
-        status_html,
+        f"""
+        <div style="
+            text-align: right;
+            padding-right: 10px;
+            font-size: 23px;
+            font-weight: 700;
+        ">
+            <span style="
+                color: #49E600;
+                font-size: 25px;
+            ">●</span>
+            STATUS: {system_status}
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
@@ -299,10 +255,16 @@ st.divider()
 
 # ============================================================
 # MAIN DASHBOARD
+#
+# LEFT   = TEMPERATURE + CURRENT
+# CENTER = SPEEDOMETER
+# RIGHT  = FAN + VOLTAGE
+#
+# RIGHT SECTION IS GIVEN MORE SPACE
 # ============================================================
 
 left, center, right = st.columns(
-    [3, 5, 3]
+    [3, 5, 4]
 )
 
 
@@ -317,36 +279,23 @@ with left:
     # ========================================================
 
     st.markdown(
-        """
-        <div class="section-heading">
-            🌡️ TEMPERATURE
-        </div>
-        """,
-        unsafe_allow_html=True
+        "## 🌡️ TEMPERATURE"
     )
 
     st.markdown(
-        """
-        <div class="sub-heading">
-            Temperature
-        </div>
-        """,
-        unsafe_allow_html=True
+        "### Temperature"
     )
 
     st.markdown(
-        f"""
-        <div class="big-value">
-            {temperature} °C
-        </div>
-        """,
-        unsafe_allow_html=True
+        f"# {temperature} °C"
     )
+
 
     temperature_percentage = min(
         temperature / 100,
         1.0
     )
+
 
     st.progress(
         temperature_percentage
@@ -361,36 +310,23 @@ with left:
     # ========================================================
 
     st.markdown(
-        """
-        <div class="section-heading">
-            ⚡ CURRENT
-        </div>
-        """,
-        unsafe_allow_html=True
+        "## ⚡ CURRENT"
     )
 
     st.markdown(
-        """
-        <div class="sub-heading">
-            Current
-        </div>
-        """,
-        unsafe_allow_html=True
+        "### Current"
     )
 
     st.markdown(
-        f"""
-        <div class="big-value">
-            {current} A
-        </div>
-        """,
-        unsafe_allow_html=True
+        f"# {current} A"
     )
+
 
     current_percentage = min(
         current / 10,
         1.0
     )
+
 
     st.progress(
         current_percentage
@@ -398,433 +334,257 @@ with left:
 
 
 # ============================================================
-# CENTER
-# CUSTOM AUTOMOTIVE SPEEDOMETER
+# CENTER SECTION
 # ============================================================
 
 with center:
 
-    # --------------------------------------------------------
+    # ========================================================
     # SPEED RANGE
-    # --------------------------------------------------------
+    # ========================================================
 
     min_speed = 0
     max_speed = 100
 
 
-    # --------------------------------------------------------
-    # GAUGE GEOMETRY
-    #
-    # 240 DEGREE AUTOMOTIVE STYLE GAUGE
-    #
-    # LEFT  = 0
-    # TOP   = 50
-    # RIGHT = 100
-    # --------------------------------------------------------
-
-    start_angle = 210
-    end_angle = -30
-
-    outer_radius = 1.0
-    inner_radius = 0.72
-
-
     # ========================================================
-    # CONVERT SPEED TO ANGLE
-    # ========================================================
-
-    def speed_to_angle(value):
-
-        fraction = (
-            value - min_speed
-        ) / (
-            max_speed - min_speed
-        )
-
-        return (
-            start_angle
-            + fraction * (
-                end_angle - start_angle
-            )
-        )
-
-
-    # ========================================================
-    # POLAR TO CARTESIAN
-    # ========================================================
-
-    def polar_to_xy(
-        radius,
-        angle
-    ):
-
-        radians = math.radians(angle)
-
-        x = radius * math.cos(radians)
-        y = radius * math.sin(radians)
-
-        return x, y
-
-
-    # ========================================================
-    # CREATE ANNULAR COLOUR SEGMENT
-    # ========================================================
-
-    def create_arc_segment(
-        start_value,
-        end_value,
-        color
-    ):
-
-        points = 50
-
-        outer_points = []
-        inner_points = []
-
-        start = speed_to_angle(
-            start_value
-        )
-
-        end = speed_to_angle(
-            end_value
-        )
-
-        for i in range(points + 1):
-
-            angle = start + (
-                end - start
-            ) * i / points
-
-            x, y = polar_to_xy(
-                outer_radius,
-                angle
-            )
-
-            outer_points.append(
-                (x, y)
-            )
-
-            x, y = polar_to_xy(
-                inner_radius,
-                angle
-            )
-
-            inner_points.append(
-                (x, y)
-            )
-
-
-        polygon = (
-            outer_points
-            + inner_points[::-1]
-        )
-
-        x_values = [
-            p[0]
-            for p in polygon
-        ]
-
-        y_values = [
-            p[1]
-            for p in polygon
-        ]
-
-        return go.Scatter(
-            x=x_values,
-            y=y_values,
-            mode="lines",
-            fill="toself",
-            fillcolor=color,
-            line={
-                "color": color,
-                "width": 0
-            },
-            hoverinfo="skip",
-            showlegend=False
-        )
-
-
-    # ========================================================
-    # CREATE FIGURE
+    # SPEEDOMETER FIGURE
     # ========================================================
 
     speedometer = go.Figure()
 
 
     # ========================================================
-    # GREEN SECTION
-    # 0 - 40
+    # MAIN SPEEDOMETER
     # ========================================================
 
     speedometer.add_trace(
-        create_arc_segment(
-            0,
-            40,
-            "#49E600"
-        )
-    )
+        go.Indicator(
+
+            mode="gauge+number",
+
+            value=speed,
 
 
-    # ========================================================
-    # BLUE SECTION
-    # 40 - 55
-    # ========================================================
+            # ------------------------------------------------
+            # SPEED NUMBER
+            # ------------------------------------------------
 
-    speedometer.add_trace(
-        create_arc_segment(
-            40,
-            55,
-            "#1479E8"
-        )
-    )
-
-
-    # ========================================================
-    # DARK SECTION
-    # 55 - 100
-    # ========================================================
-
-    speedometer.add_trace(
-        create_arc_segment(
-            55,
-            100,
-            "#263442"
-        )
-    )
-
-
-    # ========================================================
-    # WHITE TICK MARKS
-    #
-    # BIG
-    # SMALL
-    # BIG
-    # SMALL
-    #
-    # EVERY 5 KM/H
-    # BIG TICK = 10 KM/H
-    # SMALL TICK = 5 KM/H
-    # ========================================================
-
-    for value in range(
-        0,
-        101,
-        5
-    ):
-
-        angle = speed_to_angle(
-            value
-        )
-
-        # --------------------------------------------
-        # BIG TICK
-        # --------------------------------------------
-
-        if value % 10 == 0:
-
-            tick_outer = 1.17
-            tick_inner = 1.02
-            tick_width = 6
-
-        # --------------------------------------------
-        # SMALL TICK
-        # --------------------------------------------
-
-        else:
-
-            tick_outer = 1.14
-            tick_inner = 1.04
-            tick_width = 4
-
-
-        x1, y1 = polar_to_xy(
-            tick_outer,
-            angle
-        )
-
-        x2, y2 = polar_to_xy(
-            tick_inner,
-            angle
-        )
-
-
-        speedometer.add_trace(
-            go.Scatter(
-                x=[
-                    x1,
-                    x2
-                ],
-
-                y=[
-                    y1,
-                    y2
-                ],
-
-                mode="lines",
-
-                line={
-                    "color": "#FFFFFF",
-                    "width": tick_width
+            number={
+                "font": {
+                    "size": 72,
+                    "color": "#FFFFFF"
                 },
 
-                hoverinfo="skip",
-                showlegend=False
-            )
-        )
-
-
-    # ========================================================
-    # NUMBER LABELS
-    #
-    # ONLY:
-    # 0
-    # 50
-    # 100
-    # ========================================================
-
-    label_values = [
-        0,
-        50,
-        100
-    ]
-
-
-    for value in label_values:
-
-        angle = speed_to_angle(
-            value
-        )
-
-        label_radius = 1.31
-
-        x, y = polar_to_xy(
-            label_radius,
-            angle
-        )
-
-
-        speedometer.add_annotation(
-
-            x=x,
-            y=y,
-
-            text=str(value),
-
-            showarrow=False,
-
-            font={
-                "size": 22,
-                "color": "#FFFFFF",
-                "family": "Arial"
+                "valueformat": ".0f"
             },
 
-            xanchor="center",
-            yanchor="middle"
-        )
 
+            # ------------------------------------------------
+            # UNIT UNDER SPEED
+            # ------------------------------------------------
 
-    # ========================================================
-    # CURRENT SPEED INDICATOR
-    #
-    # WHITE LINE AT CURRENT SPEED
-    # ========================================================
+            title={
+                "text": "km/h",
 
-    speed_angle = speed_to_angle(
-        speed
-    )
-
-
-    # White indicator
-    indicator_outer = 1.00
-    indicator_inner = 0.74
-
-
-    x1, y1 = polar_to_xy(
-        indicator_outer,
-        speed_angle
-    )
-
-    x2, y2 = polar_to_xy(
-        indicator_inner,
-        speed_angle
-    )
-
-
-    speedometer.add_trace(
-        go.Scatter(
-
-            x=[
-                x1,
-                x2
-            ],
-
-            y=[
-                y1,
-                y2
-            ],
-
-            mode="lines",
-
-            line={
-                "color": "#FFFFFF",
-                "width": 7
+                "font": {
+                    "size": 24,
+                    "color": "#FFFFFF"
+                }
             },
 
-            hoverinfo="skip",
-            showlegend=False
+
+            # =================================================
+            # GAUGE
+            # =================================================
+
+            gauge={
+
+
+                # ------------------------------------------------
+                # AXIS
+                # ------------------------------------------------
+
+                "axis": {
+
+                    "range": [
+                        min_speed,
+                        max_speed
+                    ],
+
+
+                    # ------------------------------------------------
+                    # TICK VALUES
+                    #
+                    # Every 5 km/h
+                    # ------------------------------------------------
+
+                    "tickmode": "array",
+
+                    "tickvals": [
+
+                        0,
+                        5,
+                        10,
+                        15,
+                        20,
+                        25,
+                        30,
+                        35,
+                        40,
+                        45,
+                        50,
+                        55,
+                        60,
+                        65,
+                        70,
+                        75,
+                        80,
+                        85,
+                        90,
+                        95,
+                        100
+
+                    ],
+
+
+                    # ------------------------------------------------
+                    # ONLY SHOW 0, 50, 100
+                    # ------------------------------------------------
+
+                    "ticktext": [
+
+                        "0",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "50",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "100"
+
+                    ],
+
+
+                    "tickfont": {
+                        "size": 20,
+                        "color": "#FFFFFF"
+                    },
+
+
+                    "tickcolor": "#FFFFFF",
+
+                    "tickwidth": 3,
+
+                    "ticklen": 12
+                },
+
+
+                # ------------------------------------------------
+                # NO BORDER
+                # ------------------------------------------------
+
+                "borderwidth": 0,
+
+                "bordercolor": "#02070B",
+
+
+                # =================================================
+                # COLOURED SECTIONS
+                # =================================================
+
+                "steps": [
+
+                    # ------------------------------------------------
+                    # GREEN
+                    # 0 - 40
+                    # ------------------------------------------------
+
+                    {
+                        "range": [
+                            0,
+                            40
+                        ],
+
+                        "color": "#49E600"
+                    },
+
+
+                    # ------------------------------------------------
+                    # BLUE
+                    # 40 - 55
+                    # ------------------------------------------------
+
+                    {
+                        "range": [
+                            40,
+                            55
+                        ],
+
+                        "color": "#1479E8"
+                    },
+
+
+                    # ------------------------------------------------
+                    # DARK
+                    # 55 - 100
+                    # ------------------------------------------------
+
+                    {
+                        "range": [
+                            55,
+                            100
+                        ],
+
+                        "color": "#263442"
+                    }
+
+                ],
+
+
+                # =================================================
+                # CURRENT SPEED MARKER
+                # =================================================
+
+                "threshold": {
+
+                    "line": {
+                        "color": "#FFFFFF",
+                        "width": 5
+                    },
+
+                    "thickness": 0.82,
+
+                    "value": speed
+                },
+
+
+                # ------------------------------------------------
+                # REMOVE DEFAULT BAR
+                # ------------------------------------------------
+
+                "bar": {
+
+                    "color": "rgba(0,0,0,0)",
+
+                    "thickness": 0
+                }
+
+            }
+
         )
-    )
-
-
-    # ========================================================
-    # CENTER SPEED NUMBER
-    # ========================================================
-
-    speedometer.add_annotation(
-
-        x=0,
-        y=0.04,
-
-        text=str(speed),
-
-        showarrow=False,
-
-        font={
-            "size": 76,
-            "color": "#FFFFFF",
-            "family": "Arial"
-        },
-
-        xanchor="center",
-        yanchor="middle"
-    )
-
-
-    # ========================================================
-    # KM/H
-    #
-    # DIRECTLY UNDER 45
-    # NOT ABOVE
-    # NOT OVERLAPPING
-    # ========================================================
-
-    speedometer.add_annotation(
-
-        x=0,
-        y=-0.25,
-
-        text="km/h",
-
-        showarrow=False,
-
-        font={
-            "size": 25,
-            "color": "#FFFFFF",
-            "family": "Arial"
-        },
-
-        xanchor="center",
-        yanchor="middle"
     )
 
 
@@ -836,38 +596,22 @@ with center:
 
         height=470,
 
+
         margin={
             "l": 10,
             "r": 10,
-            "t": 10,
-            "b": 5
+            "t": 5,
+            "b": 0
         },
+
 
         paper_bgcolor="rgba(0,0,0,0)",
 
         plot_bgcolor="rgba(0,0,0,0)",
 
-        showlegend=False,
 
-        xaxis={
-            "visible": False,
-            "range": [
-                -1.45,
-                1.45
-            ],
-            "fixedrange": True
-        },
-
-        yaxis={
-            "visible": False,
-            "range": [
-                -1.40,
-                1.40
-            ],
-            "fixedrange": True,
-
-            "scaleanchor": "x",
-            "scaleratio": 1
+        font={
+            "color": "#FFFFFF"
         }
     )
 
@@ -883,8 +627,11 @@ with center:
         use_container_width=True,
 
         config={
+
             "displayModeBar": False,
+
             "staticPlot": True
+
         }
     )
 
@@ -897,21 +644,33 @@ with center:
         [2, 1, 2]
     )
 
+
     with gear_col[1]:
 
         st.markdown(
             """
-            <div class="gear-label">
-                GEAR
-            </div>
+            <div style="
+                text-align: center;
+            ">
+                <div style="
+                    font-size: 20px;
+                    font-weight: 600;
+                ">
+                    GEAR
+                </div>
             """,
             unsafe_allow_html=True
         )
 
         st.markdown(
             f"""
-            <div class="gear-value">
-                {gear}
+                <div style="
+                    font-size: 40px;
+                    font-weight: 700;
+                    margin-top: 5px;
+                ">
+                    {gear}
+                </div>
             </div>
             """,
             unsafe_allow_html=True
@@ -920,63 +679,55 @@ with center:
 
 # ============================================================
 # RIGHT SECTION
+#
+# IMPORTANT:
+# This entire section is shifted to the RIGHT.
 # ============================================================
 
 with right:
+
+    # ========================================================
+    # RIGHT SIDE SPACING
+    # ========================================================
+
+    st.markdown(
+        """
+        <div style="
+            padding-left: 35px;
+        ">
+        """,
+        unsafe_allow_html=True
+    )
+
 
     # ========================================================
     # FAN
     # ========================================================
 
     st.markdown(
-        """
-        <div class="section-heading">
-            🌀 FAN
-        </div>
-        """,
-        unsafe_allow_html=True
+        "## 🌀 FAN"
     )
 
     st.markdown(
-        """
-        <div class="sub-heading">
-            Cooling Fan
-        </div>
-        """,
-        unsafe_allow_html=True
+        "### Cooling Fan"
     )
 
 
     if fan_on:
 
         st.markdown(
-            """
-            <div class="big-value">
-                ON
-            </div>
-            """,
-            unsafe_allow_html=True
+            "# ON"
         )
 
     else:
 
         st.markdown(
-            """
-            <div class="big-value">
-                OFF
-            </div>
-            """,
-            unsafe_allow_html=True
+            "# OFF"
         )
 
 
     st.markdown(
-        f"""
-        <div class="sub-heading">
-            {fan_mode}
-        </div>
-        """,
-        unsafe_allow_html=True
+        f"**{fan_mode}**"
     )
 
 
@@ -988,30 +739,15 @@ with right:
     # ========================================================
 
     st.markdown(
-        """
-        <div class="section-heading">
-            🔋 VOLTAGE
-        </div>
-        """,
-        unsafe_allow_html=True
+        "## 🔋 VOLTAGE"
     )
 
     st.markdown(
-        """
-        <div class="sub-heading">
-            Battery Voltage
-        </div>
-        """,
-        unsafe_allow_html=True
+        "### Battery Voltage"
     )
 
     st.markdown(
-        f"""
-        <div class="big-value">
-            {voltage} V
-        </div>
-        """,
-        unsafe_allow_html=True
+        f"# {voltage} V"
     )
 
 
@@ -1020,8 +756,19 @@ with right:
         1.0
     )
 
+
     st.progress(
         voltage_percentage
+    )
+
+
+    # ========================================================
+    # CLOSE RIGHT SECTION
+    # ========================================================
+
+    st.markdown(
+        "</div>",
+        unsafe_allow_html=True
     )
 
 
@@ -1034,6 +781,8 @@ st.divider()
 
 # ============================================================
 # ODO + RANGE
+#
+# SHIFTED TOWARD RIGHT
 # ============================================================
 
 empty_left, empty_middle, odo_col, range_col = st.columns(
@@ -1048,21 +797,11 @@ empty_left, empty_middle, odo_col, range_col = st.columns(
 with odo_col:
 
     st.markdown(
-        """
-        <div class="section-heading">
-            💡 ODO
-        </div>
-        """,
-        unsafe_allow_html=True
+        "## 💡 ODO"
     )
 
     st.markdown(
-        f"""
-        <div class="big-value">
-            {odo} km
-        </div>
-        """,
-        unsafe_allow_html=True
+        f"# {odo} km"
     )
 
 
@@ -1073,21 +812,11 @@ with odo_col:
 with range_col:
 
     st.markdown(
-        """
-        <div class="section-heading">
-            🛣️ RANGE
-        </div>
-        """,
-        unsafe_allow_html=True
+        "## 🛣️ RANGE"
     )
 
     st.markdown(
-        f"""
-        <div class="big-value">
-            {range_km} km
-        </div>
-        """,
-        unsafe_allow_html=True
+        f"# {range_km} km"
     )
 
 
@@ -1096,6 +825,7 @@ with range_col:
 # ============================================================
 
 st.divider()
+
 
 st.caption(
     f"Last updated: {current_date} {current_time}"
