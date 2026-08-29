@@ -38,6 +38,8 @@ class SensorData(BaseModel):
 
     motor_status: str
 
+    speed: float
+
 
 # ============================================================
 # LATEST DATA
@@ -65,6 +67,8 @@ latest_data = {
 
     "motor_status": "OFF",
 
+    "speed": 0.0,
+
     "timestamp": None
 }
 
@@ -78,9 +82,13 @@ def receive_data(data: SensorData):
 
     global latest_data
 
+    # Replace old data with the newest ESP32 data
     latest_data = data.model_dump()
 
-    latest_data["timestamp"] = datetime.now().isoformat()
+    # Add current server timestamp
+    latest_data["timestamp"] = (
+        datetime.now().isoformat()
+    )
 
     return {
 
@@ -92,7 +100,7 @@ def receive_data(data: SensorData):
 
 
 # ============================================================
-# SEND LATEST DATA TO STREAMLIT
+# SEND LATEST DATA TO STREAMLIT DASHBOARD
 # ============================================================
 
 @app.get("/data")
@@ -110,8 +118,10 @@ def home():
 
     return {
 
-        "system": "EV Motor Protection API",
+        "system":
+        "EV Motor Protection API",
 
-        "status": "running"
+        "status":
+        "running"
 
     }
