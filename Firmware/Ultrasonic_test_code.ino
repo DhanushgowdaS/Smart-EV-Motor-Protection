@@ -3,8 +3,8 @@
 // ============================================================
 
 // FRONT
-#define FRONT_TRIG 15
-#define FRONT_ECHO 14
+#define FRONT_TRIG 14
+#define FRONT_ECHO 27
 
 // LEFT
 #define LEFT_TRIG 26
