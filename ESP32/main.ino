@@ -48,8 +48,15 @@ const int MOTOR_PWM_PIN = 17;
 // ULTRASONIC SETTINGS
 // ============================================================
 
+// Accident if distance is LESS than 10 cm
+#define ACCIDENT_DISTANCE 10.0
+
+// Maximum time to wait for echo
+// 10 ms
 #define ULTRASONIC_TIMEOUT 10000
-#define ACCIDENT_DISTANCE 30.0
+
+// Small gap between different ultrasonic sensors
+#define ULTRASONIC_GAP_MS 5
 
 // ============================================================
 // OLED
@@ -103,9 +110,10 @@ const float FAN_ON_TEMP = 31.0;
 const float FAN_OFF_TEMP = 30.0;
 
 // ============================================================
-// PROTECTION
+// TEMPERATURE PROTECTION
 // ============================================================
 
+// System shuts OFF when temperature is greater than 35 C
 const float CRITICAL_TEMP = 35.0;
 
 // ============================================================
@@ -150,25 +158,32 @@ bool lastSystemState = false;
 // ============================================================
 // ACCIDENT LOCK
 // ============================================================
+//
+// FALSE at ESP32 startup.
+//
+// Once TRUE, it NEVER becomes FALSE in software.
+//
+// ESP32 restart/power cycle is required to reset it.
+//
 
-// IMPORTANT:
-// This variable is NEVER reset in software.
-//
-// It becomes false again only after ESP32 restart.
-//
-// volatile is used because the ultrasonic task modifies it.
 volatile bool accidentDetected = false;
 
 // ============================================================
 // ULTRASONIC DISTANCES
 // ============================================================
 
-volatile float frontDistance = -1;
-volatile float leftDistance = -1;
-volatile float rightDistance = -1;
+volatile float frontDistance = -1.0;
+volatile float leftDistance = -1.0;
+volatile float rightDistance = -1.0;
 
 // ============================================================
-// MOTOR EMERGENCY STOP
+// TEMPERATURE SHUTDOWN
+// ============================================================
+
+bool temperatureShutdown = false;
+
+// ============================================================
+// EMERGENCY MOTOR STOP
 // ============================================================
 
 void emergencyMotorStop() {
@@ -194,6 +209,7 @@ float readDistance(
     int echoPin
 ) {
 
+    // Make sure trigger starts LOW
     digitalWrite(
         trigPin,
         LOW
@@ -201,6 +217,7 @@ float readDistance(
 
     delayMicroseconds(2);
 
+    // 10 us trigger pulse
     digitalWrite(
         trigPin,
         HIGH
@@ -213,6 +230,7 @@ float readDistance(
         LOW
     );
 
+    // Wait for echo
     unsigned long duration =
         pulseIn(
             echoPin,
@@ -220,10 +238,12 @@ float readDistance(
             ULTRASONIC_TIMEOUT
         );
 
+    // No echo
     if (duration == 0) {
-        return -1;
+        return -1.0;
     }
 
+    // Convert echo time to distance
     float distance =
         (duration * 0.0343) / 2.0;
 
@@ -234,11 +254,10 @@ float readDistance(
 // ULTRASONIC SAFETY TASK
 // ============================================================
 //
-// This runs independently from the main loop.
+// This task continuously checks the 3 ultrasonic sensors.
 //
-// Therefore the 500-sample current measurement,
-// temperature reading, WiFi communication etc.
-// will NOT stop ultrasonic monitoring.
+// ONE valid reading below 10 cm immediately triggers
+// the permanent accident lock.
 //
 
 void ultrasonicSafetyTask(void *parameter) {
@@ -246,16 +265,16 @@ void ultrasonicSafetyTask(void *parameter) {
     while (true) {
 
         // ====================================================
-        // IF ACCIDENT ALREADY DETECTED
+        // IF ALREADY LOCKED
         // ====================================================
 
         if (accidentDetected) {
 
-            // Keep motor OFF forever
+            // Keep motor OFF
             emergencyMotorStop();
 
-            // Do not clear accidentDetected.
-            // It stays locked until ESP32 restart.
+            // Accident lock is NOT cleared here.
+            // Only ESP32 restart clears it.
 
             vTaskDelay(
                 pdMS_TO_TICKS(5)
@@ -265,7 +284,7 @@ void ultrasonicSafetyTask(void *parameter) {
         }
 
         // ====================================================
-        // FRONT SENSOR
+        // FRONT
         // ====================================================
 
         frontDistance =
@@ -274,8 +293,9 @@ void ultrasonicSafetyTask(void *parameter) {
                 FRONT_ECHO
             );
 
+        // ONE reading below 10 cm = ACCIDENT
         if (
-            frontDistance > 0 &&
+            frontDistance > 0.0 &&
             frontDistance < ACCIDENT_DISTANCE
         ) {
 
@@ -285,15 +305,19 @@ void ultrasonicSafetyTask(void *parameter) {
 
             Serial.println();
             Serial.println(
-                "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                "=========================================="
             );
 
             Serial.println(
-                "ACCIDENT DETECTED - FRONT"
+                "!!! ACCIDENT DETECTED !!!"
+            );
+
+            Serial.println(
+                "Sensor : FRONT"
             );
 
             Serial.print(
-                "Front Distance: "
+                "Distance : "
             );
 
             Serial.print(
@@ -306,31 +330,32 @@ void ultrasonicSafetyTask(void *parameter) {
             );
 
             Serial.println(
-                "MOTOR EMERGENCY STOP"
+                "MOTOR : OFF"
             );
 
             Serial.println(
-                "SYSTEM LOCKED"
+                "SYSTEM : LOCKED"
             );
 
             Serial.println(
-                "RESTART ESP32 TO RESET"
+                "Restart ESP32 to reset"
             );
 
             Serial.println(
-                "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                "=========================================="
             );
 
             continue;
         }
 
-        // Small gap before next ultrasonic pulse
         vTaskDelay(
-            pdMS_TO_TICKS(1)
+            pdMS_TO_TICKS(
+                ULTRASONIC_GAP_MS
+            )
         );
 
         // ====================================================
-        // LEFT SENSOR
+        // LEFT
         // ====================================================
 
         leftDistance =
@@ -339,8 +364,9 @@ void ultrasonicSafetyTask(void *parameter) {
                 LEFT_ECHO
             );
 
+        // ONE reading below 10 cm = ACCIDENT
         if (
-            leftDistance > 0 &&
+            leftDistance > 0.0 &&
             leftDistance < ACCIDENT_DISTANCE
         ) {
 
@@ -350,15 +376,19 @@ void ultrasonicSafetyTask(void *parameter) {
 
             Serial.println();
             Serial.println(
-                "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                "=========================================="
             );
 
             Serial.println(
-                "ACCIDENT DETECTED - LEFT"
+                "!!! ACCIDENT DETECTED !!!"
+            );
+
+            Serial.println(
+                "Sensor : LEFT"
             );
 
             Serial.print(
-                "Left Distance: "
+                "Distance : "
             );
 
             Serial.print(
@@ -371,30 +401,32 @@ void ultrasonicSafetyTask(void *parameter) {
             );
 
             Serial.println(
-                "MOTOR EMERGENCY STOP"
+                "MOTOR : OFF"
             );
 
             Serial.println(
-                "SYSTEM LOCKED"
+                "SYSTEM : LOCKED"
             );
 
             Serial.println(
-                "RESTART ESP32 TO RESET"
+                "Restart ESP32 to reset"
             );
 
             Serial.println(
-                "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                "=========================================="
             );
 
             continue;
         }
 
         vTaskDelay(
-            pdMS_TO_TICKS(1)
+            pdMS_TO_TICKS(
+                ULTRASONIC_GAP_MS
+            )
         );
 
         // ====================================================
-        // RIGHT SENSOR
+        // RIGHT
         // ====================================================
 
         rightDistance =
@@ -403,8 +435,9 @@ void ultrasonicSafetyTask(void *parameter) {
                 RIGHT_ECHO
             );
 
+        // ONE reading below 10 cm = ACCIDENT
         if (
-            rightDistance > 0 &&
+            rightDistance > 0.0 &&
             rightDistance < ACCIDENT_DISTANCE
         ) {
 
@@ -414,15 +447,19 @@ void ultrasonicSafetyTask(void *parameter) {
 
             Serial.println();
             Serial.println(
-                "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                "=========================================="
             );
 
             Serial.println(
-                "ACCIDENT DETECTED - RIGHT"
+                "!!! ACCIDENT DETECTED !!!"
+            );
+
+            Serial.println(
+                "Sensor : RIGHT"
             );
 
             Serial.print(
-                "Right Distance: "
+                "Distance : "
             );
 
             Serial.print(
@@ -435,30 +472,26 @@ void ultrasonicSafetyTask(void *parameter) {
             );
 
             Serial.println(
-                "MOTOR EMERGENCY STOP"
+                "MOTOR : OFF"
             );
 
             Serial.println(
-                "SYSTEM LOCKED"
+                "SYSTEM : LOCKED"
             );
 
             Serial.println(
-                "RESTART ESP32 TO RESET"
+                "Restart ESP32 to reset"
             );
 
             Serial.println(
-                "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                "=========================================="
             );
 
             continue;
         }
 
-        // ====================================================
-        // VERY SHORT LOOP DELAY
-        // ====================================================
-
         vTaskDelay(
-            pdMS_TO_TICKS(2)
+            pdMS_TO_TICKS(5)
         );
     }
 }
@@ -486,9 +519,9 @@ void updateNormalOLED(
 
     display.setTextSize(1);
 
-    // --------------------------------------------------------
+    // ========================================================
     // TEMPERATURE
-    // --------------------------------------------------------
+    // ========================================================
 
     display.setCursor(
         40,
@@ -508,9 +541,9 @@ void updateNormalOLED(
         "C"
     );
 
-    // --------------------------------------------------------
+    // ========================================================
     // VOLTAGE
-    // --------------------------------------------------------
+    // ========================================================
 
     display.setCursor(
         0,
@@ -530,9 +563,9 @@ void updateNormalOLED(
         " V"
     );
 
-    // --------------------------------------------------------
+    // ========================================================
     // CURRENT
-    // --------------------------------------------------------
+    // ========================================================
 
     display.setCursor(
         68,
@@ -552,9 +585,9 @@ void updateNormalOLED(
         " A"
     );
 
-    // --------------------------------------------------------
+    // ========================================================
     // FAN
-    // --------------------------------------------------------
+    // ========================================================
 
     display.setCursor(
         43,
@@ -584,10 +617,6 @@ void updateNormalOLED(
 // ============================================================
 // ACCIDENT OLED
 // ============================================================
-//
-// Once accidentDetected becomes true,
-// this function displays ONLY the accident message.
-//
 
 void updateAccidentOLED() {
 
@@ -601,7 +630,6 @@ void updateAccidentOLED() {
         SSD1306_WHITE
     );
 
-    // Large text
     display.setTextSize(2);
 
     display.setCursor(
@@ -626,6 +654,67 @@ void updateAccidentOLED() {
 }
 
 // ============================================================
+// TEMPERATURE SHUTDOWN OLED
+// ============================================================
+
+void updateTemperatureShutdownOLED(
+    float temperature
+) {
+
+    if (!oledOK) {
+        return;
+    }
+
+    display.clearDisplay();
+
+    display.setTextColor(
+        SSD1306_WHITE
+    );
+
+    display.setTextSize(1);
+
+    display.setCursor(
+        32,
+        2
+    );
+
+    display.print(
+        "TEMP: "
+    );
+
+    display.print(
+        temperature,
+        1
+    );
+
+    display.println(
+        "C"
+    );
+
+    display.setTextSize(2);
+
+    display.setCursor(
+        18,
+        25
+    );
+
+    display.println(
+        "SYSTEM"
+    );
+
+    display.setCursor(
+        30,
+        45
+    );
+
+    display.println(
+        "OFF"
+    );
+
+    display.display();
+}
+
+// ============================================================
 // MOTOR SPEED CONTROL
 // ============================================================
 
@@ -633,11 +722,22 @@ void updateMotor(
     bool systemON
 ) {
 
-    // --------------------------------------------------------
-    // ACCIDENT OVERRIDES EVERYTHING
-    // --------------------------------------------------------
+    // ========================================================
+    // ACCIDENT HAS HIGHEST PRIORITY
+    // ========================================================
 
     if (accidentDetected) {
+
+        emergencyMotorStop();
+
+        return;
+    }
+
+    // ========================================================
+    // TEMPERATURE SHUTDOWN
+    // ========================================================
+
+    if (temperatureShutdown) {
 
         emergencyMotorStop();
 
@@ -659,7 +759,8 @@ void updateMotor(
         motorRampStart =
             now;
 
-        speed = 0.0;
+        speed =
+            0.0;
     }
 
     // ========================================================
@@ -783,9 +884,11 @@ void updateMotor(
 
 float readCurrent() {
 
-    double sum = 0;
+    double sum =
+        0;
 
-    const int samples = 500;
+    const int samples =
+        500;
 
     for (
         int i = 0;
@@ -834,9 +937,11 @@ float readCurrent() {
 
 float readVoltage() {
 
-    double sum = 0;
+    double sum =
+        0;
 
-    const int samples = 100;
+    const int samples =
+        100;
 
     for (
         int i = 0;
@@ -1393,24 +1498,6 @@ void setup() {
 void loop() {
 
     // ========================================================
-    // ACCIDENT HAS HIGHEST PRIORITY
-    // ========================================================
-
-    if (accidentDetected) {
-
-        // Keep motor OFF
-        emergencyMotorStop();
-
-        // OLED ONLY SHOWS ACCIDENT
-        updateAccidentOLED();
-
-        // ----------------------------------------------------
-        // We still send/update sensor data below so dashboard
-        // can receive ACCIDENT DETECTED.
-        // ----------------------------------------------------
-    }
-
-    // ========================================================
     // READ SENSORS
     // ========================================================
 
@@ -1422,6 +1509,37 @@ void loop() {
 
     float temperature =
         readTemperature();
+
+    // ========================================================
+    // TEMPERATURE PROTECTION
+    // ========================================================
+    //
+    // IMPORTANT:
+    // Temperature greater than 35 C immediately shuts
+    // the motor down.
+    //
+    // This does NOT create the permanent accident lock.
+    // It is a temperature shutdown condition.
+    //
+    // When temperature comes back to <=35 C, normal
+    // system logic can operate again.
+    //
+    // Accident lock is different and survives until restart.
+    // ========================================================
+
+    if (
+        temperature >
+        CRITICAL_TEMP
+    ) {
+
+        temperatureShutdown =
+            true;
+
+    } else {
+
+        temperatureShutdown =
+            false;
+    }
 
     // ========================================================
     // SYSTEM ON/OFF
@@ -1443,10 +1561,20 @@ void loop() {
     }
 
     // ========================================================
-    // ACCIDENT OVERRIDES SYSTEM STATE
+    // ACCIDENT OVERRIDES EVERYTHING
     // ========================================================
 
     if (accidentDetected) {
+
+        systemON =
+            false;
+    }
+
+    // ========================================================
+    // TEMPERATURE OVERRIDES MOTOR
+    // ========================================================
+
+    if (temperatureShutdown) {
 
         systemON =
             false;
@@ -1585,29 +1713,57 @@ void loop() {
 
     String protectionStatus;
 
-    // ACCIDENT HAS HIGHEST PRIORITY
+    // --------------------------------------------------------
+    // PRIORITY 1: ACCIDENT
+    // --------------------------------------------------------
+
     if (accidentDetected) {
 
         protectionStatus =
             "ACCIDENT DETECTED";
+    }
 
-    } else if (
+    // --------------------------------------------------------
+    // PRIORITY 2: TEMPERATURE
+    // --------------------------------------------------------
+
+    else if (temperatureShutdown) {
+
+        protectionStatus =
+            "SYSTEM OFF";
+    }
+
+    // --------------------------------------------------------
+    // PRIORITY 3: CRITICAL
+    // --------------------------------------------------------
+
+    else if (
         temperature >=
         CRITICAL_TEMP
     ) {
 
         protectionStatus =
             "CRITICAL";
+    }
 
-    } else if (
+    // --------------------------------------------------------
+    // PRIORITY 4: WARNING
+    // --------------------------------------------------------
+
+    else if (
         temperature >=
         FAN_ON_TEMP
     ) {
 
         protectionStatus =
             "WARNING";
+    }
 
-    } else {
+    // --------------------------------------------------------
+    // NORMAL
+    // --------------------------------------------------------
+
+    else {
 
         protectionStatus =
             "NORMAL";
@@ -1627,6 +1783,13 @@ void loop() {
             "OFF";
 
     } else if (
+        temperatureShutdown
+    ) {
+
+        motorStatus =
+            "OFF";
+
+    } else if (
         systemON
     ) {
 
@@ -1640,15 +1803,22 @@ void loop() {
     }
 
     // ========================================================
-    // MOTOR SPEED CONTROL
+    // MOTOR CONTROL
     // ========================================================
 
     if (accidentDetected) {
 
+        // Permanent accident shutdown
+        emergencyMotorStop();
+
+    } else if (temperatureShutdown) {
+
+        // Temperature emergency shutdown
         emergencyMotorStop();
 
     } else {
 
+        // Existing normal motor logic
         updateMotor(
             systemON
         );
@@ -1660,12 +1830,19 @@ void loop() {
 
     if (accidentDetected) {
 
-        // ONLY ACCIDENT MESSAGE
+        // Accident gets highest priority
         updateAccidentOLED();
+
+    } else if (temperatureShutdown) {
+
+        // Temperature shutdown
+        updateTemperatureShutdownOLED(
+            temperature
+        );
 
     } else {
 
-        // NORMAL DISPLAY
+        // Existing normal OLED
         updateNormalOLED(
             temperature,
             batteryVoltage,
@@ -1684,9 +1861,9 @@ void loop() {
         "------------------------------------------"
     );
 
-    // --------------------------------------------------------
-    // ACCIDENT INFORMATION
-    // --------------------------------------------------------
+    // ========================================================
+    // ACCIDENT
+    // ========================================================
 
     if (accidentDetected) {
 
@@ -1695,11 +1872,11 @@ void loop() {
         );
 
         Serial.println(
-            "SYSTEM LOCKED"
+            "SYSTEM : LOCKED"
         );
 
         Serial.println(
-            "MOTOR OFF"
+            "MOTOR  : OFF"
         );
 
         Serial.println(
@@ -1746,12 +1923,49 @@ void loop() {
         Serial.println(
             " cm"
         );
+    }
 
-    } else {
+    // ========================================================
+    // TEMPERATURE SHUTDOWN
+    // ========================================================
 
-        // ----------------------------------------------------
-        // NORMAL INFORMATION
-        // ----------------------------------------------------
+    else if (temperatureShutdown) {
+
+        Serial.println(
+            "!!! HIGH TEMPERATURE !!!"
+        );
+
+        Serial.print(
+            "Temperature : "
+        );
+
+        Serial.print(
+            temperature,
+            2
+        );
+
+        Serial.println(
+            " C"
+        );
+
+        Serial.println(
+            "SYSTEM : OFF"
+        );
+
+        Serial.println(
+            "MOTOR  : OFF"
+        );
+
+        Serial.println(
+            "Cooling fan : ON"
+        );
+    }
+
+    // ========================================================
+    // NORMAL
+    // ========================================================
+
+    else {
 
         Serial.print(
             "System : "
@@ -1901,7 +2115,5 @@ void loop() {
     previousTemperature =
         temperature;
 
-    delay(
-        5
-    );
+    delay(5);
 }
