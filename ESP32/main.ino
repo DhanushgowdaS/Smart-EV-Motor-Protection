@@ -131,7 +131,7 @@ const float CRITICAL_TEMP = 35.0;
 // MOTOR
 // ============================================================
 
-const float MAX_SPEED = 45.0;
+const float MAX_SPEED = 60.0;
 
 const int PWM_MAX = 255;
 
