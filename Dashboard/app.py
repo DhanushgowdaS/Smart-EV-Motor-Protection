@@ -349,8 +349,9 @@ with center:
     min_speed = 0
     max_speed = 100
 
-    start_angle = 220
-    end_angle = -40
+    # Semi-circular automotive digital speedometer
+    start_angle = 180
+    end_angle = 0
 
     def speed_to_angle(value):
         fraction = (value - min_speed) / (max_speed - min_speed)
@@ -360,8 +361,8 @@ with center:
         radians = math.radians(angle)
         return radius * math.cos(radians), radius * math.sin(radians)
 
-    def create_arc_segment(start_value, end_value, color, width=22, radius=1.0):
-        points = 80
+    def create_arc_segment(start_value, end_value, color, width=18):
+        points = 100
         x_values = []
         y_values = []
 
@@ -370,7 +371,7 @@ with center:
 
         for i in range(points + 1):
             angle = start + (end - start) * i / points
-            x, y = polar_to_xy(radius, angle)
+            x, y = polar_to_xy(1.0, angle)
             x_values.append(x)
             y_values.append(y)
 
@@ -388,14 +389,14 @@ with center:
 
     speedometer = go.Figure()
 
-    # Deep instrument face
+    # Main dark instrument face
     face_points = 160
     face_x = []
     face_y = []
 
     for i in range(face_points + 1):
         angle = 360 * i / face_points
-        x, y = polar_to_xy(1.08, angle)
+        x, y = polar_to_xy(1.05, angle)
         face_x.append(x)
         face_y.append(y)
 
@@ -405,9 +406,9 @@ with center:
             y=face_y,
             mode="lines",
             fill="toself",
-            fillcolor="#06111B",
+            fillcolor="#03080D",
             line={
-                "color": "#0D1822",
+                "color": "#111A22",
                 "width": 2
             },
             hoverinfo="skip",
@@ -415,103 +416,74 @@ with center:
         )
     )
 
-    # Premium outer bezel
+    # Thin outer automotive bezel
+    bezel_x = []
+    bezel_y = []
+
+    for i in range(face_points + 1):
+        angle = 360 * i / face_points
+        x, y = polar_to_xy(1.10, angle)
+        bezel_x.append(x)
+        bezel_y.append(y)
+
     speedometer.add_trace(
         go.Scatter(
-            x=face_x,
-            y=face_y,
+            x=bezel_x,
+            y=bezel_y,
             mode="lines",
             line={
-                "color": "#5E6A75",
-                "width": 12
+                "color": "#4A4F54",
+                "width": 5
             },
             hoverinfo="skip",
             showlegend=False
         )
     )
 
-    speedometer.add_trace(
-        go.Scatter(
-            x=face_x,
-            y=face_y,
-            mode="lines",
-            line={
-                "color": "#121D27",
-                "width": 7
-            },
-            hoverinfo="skip",
-            showlegend=False
-        )
-    )
-
-    # Colored performance arc
+    # Main semi-circular colored scale
     speedometer.add_trace(
         create_arc_segment(
             0,
             40,
-            "#49E600",
-            24,
-            1.00
+            "#39D900",
+            20
         )
     )
 
     speedometer.add_trace(
         create_arc_segment(
             40,
-            55,
-            "#1479E8",
-            24,
-            1.00
+            85,
+            "#4A555F",
+            20
         )
     )
 
     speedometer.add_trace(
         create_arc_segment(
-            55,
+            85,
             100,
-            "#263442",
-            24,
-            1.00
+            "#E60000",
+            20
         )
     )
 
-    # Inner highlight ring
-    inner_points = 160
-    inner_x = []
-    inner_y = []
-
-    for i in range(inner_points + 1):
-        angle = 360 * i / inner_points
-        x, y = polar_to_xy(0.82, angle)
-        inner_x.append(x)
-        inner_y.append(y)
-
-    speedometer.add_trace(
-        go.Scatter(
-            x=inner_x,
-            y=inner_y,
-            mode="lines",
-            line={
-                "color": "#152431",
-                "width": 2
-            },
-            hoverinfo="skip",
-            showlegend=False
-        )
-    )
-
-    # Automotive-style graduations
+    # Fine automotive tick marks
     for value in range(0, 101, 2):
         angle = speed_to_angle(value)
 
-        if value % 10 == 0:
-            tick_outer = 1.19
-            tick_inner = 1.08
-            tick_width = 5
+        if value % 20 == 0:
+            tick_outer = 1.14
+            tick_inner = 1.01
+            tick_width = 4
+        elif value % 10 == 0:
+            tick_outer = 1.13
+            tick_inner = 1.04
+            tick_width = 3
         else:
-            tick_outer = 1.17
-            tick_inner = 1.105
-            tick_width = 2
+            tick_outer = 1.12
+            tick_inner = 1.065
+            tick_width = 1.8
 
         x1, y1 = polar_to_xy(tick_outer, angle)
         x2, y2 = polar_to_xy(tick_inner, angle)
@@ -522,7 +494,7 @@ with center:
                 y=[y1, y2],
                 mode="lines",
                 line={
-                    "color": "#F4F7FA",
+                    "color": "#F2F4F5",
                     "width": tick_width
                 },
                 hoverinfo="skip",
@@ -530,10 +502,10 @@ with center:
             )
         )
 
-    # Numeric scale
-    for value in range(0, 101, 10):
+    # Main numeric scale
+    for value in range(0, 101, 20):
         angle = speed_to_angle(value)
-        x, y = polar_to_xy(1.34, angle)
+        x, y = polar_to_xy(1.31, angle)
 
         speedometer.add_annotation(
             x=x,
@@ -541,137 +513,84 @@ with center:
             text=str(value),
             showarrow=False,
             font={
-                "size": 17,
-                "color": "#E9EEF2",
+                "size": 18,
+                "color": "#E8ECEF",
                 "family": "Arial"
             },
             xanchor="center",
             yanchor="middle"
         )
 
-    # Digital center display
+    # Large cyan digital speed readout
     speedometer.add_annotation(
-        x=0,
-        y=0.13,
+        x=-0.02,
+        y=-0.02,
         text=f"{speed:.0f}",
         showarrow=False,
         font={
-            "size": 72,
-            "color": "#FFFFFF",
-            "family": "Arial Black"
-        },
-        xanchor="center",
-        yanchor="middle"
-    )
-
-    speedometer.add_annotation(
-        x=0,
-        y=-0.18,
-        text="km/h",
-        showarrow=False,
-        font={
-            "size": 22,
-            "color": "#D7E0E8",
+            "size": 82,
+            "color": "#20BFFF",
             "family": "Arial"
         },
         xanchor="center",
         yanchor="middle"
     )
 
-    # Needle shadow
-    speed_angle = speed_to_angle(speed)
-
-    x1, y1 = polar_to_xy(0.91, speed_angle)
-    x2, y2 = polar_to_xy(0.17, speed_angle)
-
-    speedometer.add_trace(
-        go.Scatter(
-            x=[x1 + 0.018, x2 + 0.018],
-            y=[y1 - 0.018, y2 - 0.018],
-            mode="lines",
-            line={
-                "color": "rgba(0,0,0,0.75)",
-                "width": 11
-            },
-            hoverinfo="skip",
-            showlegend=False
-        )
+    # Unit positioned to the lower-right like the reference
+    speedometer.add_annotation(
+        x=0.37,
+        y=-0.20,
+        text="km/hr",
+        showarrow=False,
+        font={
+            "size": 21,
+            "color": "#16BFFF",
+            "family": "Arial"
+        },
+        xanchor="left",
+        yanchor="middle"
     )
 
-    # Needle
-    speedometer.add_trace(
-        go.Scatter(
-            x=[x1, x2],
-            y=[y1, y2],
-            mode="lines",
-            line={
-                "color": "#FF5A36",
-                "width": 6
-            },
-            hoverinfo="skip",
-            showlegend=False
-        )
-    )
+    # Small odometer window under the digital speed
+    odo_text = f"{odo} km"
 
-    # Needle tip
-    tip_x, tip_y = polar_to_xy(0.98, speed_angle)
-
-    speedometer.add_trace(
-        go.Scatter(
-            x=[tip_x],
-            y=[tip_y],
-            mode="markers",
-            marker={
-                "size": 9,
-                "color": "#FF6B45",
-                "line": {
-                    "color": "#FFFFFF",
-                    "width": 1
-                }
-            },
-            hoverinfo="skip",
-            showlegend=False
-        )
-    )
-
-    # Central metallic hub
-    speedometer.add_trace(
-        go.Scatter(
-            x=[0],
-            y=[0],
-            mode="markers",
-            marker={
-                "size": 18,
-                "color": "#1B2732",
-                "line": {
-                    "color": "#D6DEE5",
-                    "width": 3
-                }
-            },
-            hoverinfo="skip",
-            showlegend=False
-        )
+    speedometer.add_annotation(
+        x=0,
+        y=-0.48,
+        text=odo_text,
+        showarrow=False,
+        font={
+            "size": 16,
+            "color": "#E8E8E8",
+            "family": "Courier New"
+        },
+        bgcolor="#101214",
+        bordercolor="#22262A",
+        borderwidth=1,
+        borderpad=4,
+        xanchor="center",
+        yanchor="middle"
     )
 
     speedometer.update_layout(
-        height=500,
+        height=430,
         margin={
             "l": 10,
             "r": 10,
-            "t": 8,
-            "b": 5
+            "t": 10,
+            "b": 0
         },
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         showlegend=False,
         xaxis={
             "visible": False,
-            "range": [-1.48, 1.48],
+            "range": [-1.42, 1.42],
             "fixedrange": True
         },
         yaxis={
             "visible": False,
-            "range": [-1.48, 1.48],
+            "range": [-0.62, 1.38],
             "fixedrange": True,
             "scaleanchor": "x",
             "scaleratio": 1
