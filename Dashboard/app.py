@@ -17,226 +17,263 @@ API_URL = "https://smart-ev-motor-protection.onrender.com/data"
 
 try:
     response = requests.get(API_URL, timeout=5)
-
-    if response.status_code == 200:
-        data = response.json()
-    else:
-        data = None
-
+    data = response.json() if response.status_code == 200 else None
 except Exception:
     data = None
 
-if data is None:
-    temperature = 0.0
-    current = 0.0
-    voltage = 0.0
-    fan_on = False
-    system_on = False
-    system_status = "NOT CONNECTED"
-    speed = 0.0
-
-else:
-    temperature = float(data.get("temperature", 0.0))
-    current = float(data.get("current", 0.0))
-    voltage = float(data.get("voltage", 0.0))
-    fan_on = bool(data.get("fan", False))
-    system_on = bool(data.get("system", False))
-    system_status = data.get("status", "NORMAL")
-    speed = float(data.get("speed", 0.0))
-    battery_health = data.get("battery_health", None)
-
-    speed = max(0.0, min(speed, 100.0))
+temperature = float(data.get("temperature", 0.0)) if data else 0.0
+current = float(data.get("current", 0.0)) if data else 0.0
+voltage = float(data.get("voltage", 0.0)) if data else 0.0
+fan_on = bool(data.get("fan", False)) if data else False
+system_on = bool(data.get("system", False)) if data else False
+system_status = str(data.get("status", "NOT CONNECTED")) if data else "NOT CONNECTED"
+speed = float(data.get("speed", 0.0)) if data else 0.0
+speed = max(0.0, min(speed, 100.0))
+battery_health = data.get("battery_health") if data else None
 
 odo = 1256
 range_km = 78
-fan_mode = "AUTO MODE"
+now = datetime.now(ZoneInfo("Asia/Kolkata"))
+current_time = now.strftime("%I:%M %p")
+current_date = now.strftime("%d-%m-%Y")
 
-india_time = datetime.now(ZoneInfo("Asia/Kolkata"))
+status_upper = system_status.upper()
+if "ACCIDENT" in status_upper:
+    status_label = "ACCIDENT DETECTED"
+    status_color = "#FF4D4D"
+elif any(x in status_upper for x in ("CRITICAL", "WARNING", "LOAD RISING")):
+    status_label = status_upper
+    status_color = "#FF4D4D"
+elif data is None:
+    status_label = "NOT CONNECTED"
+    status_color = "#FF4D4D"
+else:
+    status_label = "NORMAL"
+    status_color = "#55D72D"
 
-current_time = india_time.strftime("%I:%M %p")
-current_date = india_time.strftime("%d-%m-%Y")
+ready = bool(data) and system_on and "ACCIDENT" not in status_upper and "CRITICAL" not in status_upper
+ready_label = "READY" if ready else "NOT READY"
+ready_color = "#55D72D" if ready else "#FF4D4D"
+drive_mode = "D" if system_on else "P"
+
+def clamp(value, low, high):
+    return max(low, min(value, high))
+
+def gauge_figure(value):
+    start_angle = 210
+    end_angle = -30
+
+    def angle(v):
+        return start_angle + clamp(v, 0, 100) / 100 * (end_angle - start_angle)
+
+    def xy(radius, degrees):
+        radians = math.radians(degrees)
+        return radius * math.cos(radians), radius * math.sin(radians)
+
+    def arc(start, end, color):
+        outer = 1.0
+        inner = 0.76
+        points = []
+        for i in range(61):
+            a = start + (end - start) * i / 60
+            points.append(xy(outer, a))
+        for i in range(60, -1, -1):
+            a = start + (end - start) * i / 60
+            points.append(xy(inner, a))
+        return go.Scatter(
+            x=[p[0] for p in points],
+            y=[p[1] for p in points],
+            mode="lines",
+            fill="toself",
+            fillcolor=color,
+            line={"color": color, "width": 0},
+            hoverinfo="skip",
+            showlegend=False
+        )
+
+    fig = go.Figure()
+    fig.add_trace(arc(angle(0), angle(40), "#55D72D"))
+    fig.add_trace(arc(angle(40), angle(55), "#1678E8"))
+    fig.add_trace(arc(angle(55), angle(100), "#263442"))
+
+    for value in range(0, 101, 5):
+        a = angle(value)
+        outer, inner = (1.17, 1.02) if value % 10 == 0 else (1.14, 1.05)
+        x1, y1 = xy(outer, a)
+        x2, y2 = xy(inner, a)
+        fig.add_trace(go.Scatter(
+            x=[x1, x2],
+            y=[y1, y2],
+            mode="lines",
+            line={"color": "#F4F7FA", "width": 5 if value % 10 == 0 else 3},
+            hoverinfo="skip",
+            showlegend=False
+        ))
+
+    for value in (0, 50, 100):
+        x, y = xy(1.31, angle(value))
+        fig.add_annotation(
+            x=x, y=y, text=str(value), showarrow=False,
+            font={"size": 20, "color": "#F4F7FA"}
+        )
+
+    a = angle(value if False else speed)
+    x1, y1 = xy(1.0, a)
+    x2, y2 = xy(0.72, a)
+    fig.add_trace(go.Scatter(
+        x=[x1, x2],
+        y=[y1, y2],
+        mode="lines",
+        line={"color": "#FFFFFF", "width": 7},
+        hoverinfo="skip",
+        showlegend=False
+    ))
+
+    fig.add_annotation(
+        x=0, y=0.03, text=f"{speed:.0f}", showarrow=False,
+        font={"size": 72, "color": "#FFFFFF", "family": "Arial Black"}
+    )
+    fig.add_annotation(
+        x=0, y=-0.24, text="km/h", showarrow=False,
+        font={"size": 24, "color": "#FFFFFF"}
+    )
+    fig.add_annotation(
+        x=0, y=-0.52, text=drive_mode, showarrow=False,
+        font={"size": 42, "color": "#55D72D", "family": "Arial Black"}
+    )
+
+    fig.update_layout(
+        height=500,
+        margin={"l": 0, "r": 0, "t": 0, "b": 0},
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        showlegend=False,
+        xaxis={"visible": False, "range": [-1.45, 1.45], "fixedrange": True},
+        yaxis={
+            "visible": False,
+            "range": [-1.45, 1.45],
+            "fixedrange": True,
+            "scaleanchor": "x",
+            "scaleratio": 1
+        }
+    )
+    return fig
 
 st.markdown(
     """
     <style>
+    .stApp {
+        background:
+            radial-gradient(circle at 15% 20%, rgba(125,0,255,.15), transparent 32%),
+            radial-gradient(circle at 85% 25%, rgba(0,180,255,.11), transparent 30%),
+            radial-gradient(circle at 50% 90%, rgba(180,0,255,.09), transparent 35%),
+            #02070B;
+        background-attachment: fixed;
+    }
+    .stApp::before {
+        content: "";
+        position: fixed;
+        inset: -20%;
+        pointer-events: none;
+        z-index: 0;
+        background:
+            radial-gradient(circle at 20% 30%, rgba(145,0,255,.10), transparent 22%),
+            radial-gradient(circle at 80% 65%, rgba(0,140,255,.08), transparent 20%);
+        filter: blur(35px);
+        animation: uvGlow 8s ease-in-out infinite alternate;
+    }
+    @keyframes uvGlow {
+        0% { transform: scale(1) translate3d(-1%,-1%,0); opacity:.65; }
+        100% { transform: scale(1.08) translate3d(1%,1%,0); opacity:1; }
+    }
+    .main .block-container {
+        position: relative;
+        z-index: 1;
+        max-width: 1500px;
+        padding: 1rem 2.5rem;
+    }
+    [data-testid="stHeader"] { background:#02070B; }
+    [data-testid="stToolbar"] { visibility:hidden; }
 
-        .stApp {
-            background:
-                radial-gradient(circle at 15% 20%, rgba(125, 0, 255, 0.16), transparent 32%),
-                radial-gradient(circle at 85% 25%, rgba(0, 180, 255, 0.12), transparent 30%),
-                radial-gradient(circle at 50% 90%, rgba(180, 0, 255, 0.10), transparent 35%),
-                #02070B;
-            background-attachment: fixed;
-        }
+    .header {
+        display:grid;
+        grid-template-columns:1fr 1fr 1fr;
+        align-items:center;
+        padding:4px 2px 10px;
+    }
+    .brand { font-size:30px; font-weight:800; letter-spacing:1px; }
+    .brand span { color:#55D72D; }
+    .brand b { color:#F4F7FA; }
+    .clock { font-size:26px; font-weight:800; text-align:center; color:#F4F7FA; }
+    .ready { font-size:28px; font-weight:800; text-align:right; }
 
-        .stApp::before {
-            content: "";
-            position: fixed;
-            inset: -20%;
-            pointer-events: none;
-            z-index: 0;
-            background:
-                radial-gradient(circle at 20% 30%, rgba(145, 0, 255, 0.10), transparent 22%),
-                radial-gradient(circle at 80% 65%, rgba(0, 140, 255, 0.08), transparent 20%);
-            filter: blur(35px);
-            animation: uvGlow 8s ease-in-out infinite alternate;
-        }
+    .card {
+        background:linear-gradient(145deg,rgba(15,24,35,.94),rgba(3,8,13,.97));
+        border:1px solid rgba(110,145,175,.28);
+        border-radius:14px;
+        box-shadow:inset 0 0 18px rgba(255,255,255,.015),0 0 18px rgba(0,100,180,.08);
+        padding:18px 20px;
+        margin:6px 0;
+    }
+    .card-title { font-size:22px; font-weight:800; color:#F3F6FA; letter-spacing:.5px; }
+    .value { font-size:42px; font-weight:800; line-height:1.05; margin-top:7px; }
+    .blue { color:#1685FF; }
+    .yellow { color:#FFC51B; }
+    .green { color:#55D72D; }
+    .red { color:#FF4D4D; }
+    .sub { font-size:17px; color:#E4E9EF; margin-top:6px; }
+    .bar {
+        height:12px;
+        border-radius:8px;
+        margin-top:14px;
+        box-shadow:0 0 8px rgba(80,210,50,.12);
+    }
+    .bar-line {
+        position:relative;
+        height:18px;
+        margin-top:2px;
+        color:#E5EAF0;
+        font-size:13px;
+    }
+    .bar-line span { position:absolute; transform:translateX(-50%); }
+    .bar-line .a { left:0; transform:none; }
+    .bar-line .b { left:50%; }
+    .bar-line .c { right:0; transform:none; }
 
-        @keyframes uvGlow {
-            0% { transform: scale(1) translate3d(-1%, -1%, 0); opacity: 0.65; }
-            100% { transform: scale(1.08) translate3d(1%, 1%, 0); opacity: 1; }
-        }
+    .status-card { min-height:108px; }
+    .status { font-size:30px; font-weight:800; margin-top:5px; }
+    .fan-icon { font-size:34px; margin-right:8px; }
+    .bottom {
+        border-top:1px solid rgba(160,190,220,.25);
+        border-bottom:1px solid rgba(160,190,220,.18);
+        padding:12px 8px;
+        margin-top:8px;
+    }
+    .bottom-label {
+        font-size:17px;
+        color:#AEB8C4;
+        font-weight:800;
+        letter-spacing:1px;
+    }
+    .bottom-value { font-size:30px; color:#F5F7FA; font-weight:800; margin-top:2px; }
+    .battery-value { color:#55D72D; }
 
-        .main .block-container {
-            position: relative;
-            z-index: 1;
-        }
-
-        [data-testid="stHeader"] {
-            background-color: #02070B;
-        }
-
-        [data-testid="stToolbar"] {
-            visibility: hidden;
-        }
-
-        .block-container {
-            padding-top: 1.5rem;
-            padding-bottom: 1rem;
-            padding-left: 3rem;
-            padding-right: 3rem;
-            max-width: 1500px;
-        }
-
-        .project-title {
-            text-align: center;
-            white-space: nowrap;
-            font-size: 36px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            color: #F5F5F5;
-            margin-bottom: 5px;
-        }
-
-        .ready-text {
-            font-size: 30px;
-            font-weight: 800;
-            color: #FFFFFF;
-        }
-
-        .clock-text {
-            font-size: 30px;
-            font-weight: 800;
-            text-align: center;
-            color: #FFFFFF;
-        }
-
-        .status-text {
-            font-size: 30px;
-            font-weight: 800;
-            text-align: right;
-            color: #FFFFFF;
-        }
-
-        .section-heading {
-            font-size: 25px;
-            font-weight: 800;
-            color: #F5F5F5;
-            margin-top: 8px;
-        }
-
-        .sub-heading {
-            font-size: 19px;
-            font-weight: 600;
-            color: #FFFFFF;
-            margin-top: 10px;
-        }
-
-        .odo-card {
-            margin-top: 4px;
-            padding: 12px 14px 10px;
-            border-radius: 12px;
-            background: linear-gradient(145deg, rgba(12, 18, 28, 0.96), rgba(2, 7, 11, 0.98));
-            border: 1px solid rgba(145, 0, 255, 0.35);
-            box-shadow: 0 0 18px rgba(125, 0, 255, 0.14), inset 0 0 18px rgba(0, 180, 255, 0.04);
-        }
-
-        .odo-label {
-            font-size: 15px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            color: #BFC8D4;
-            margin-bottom: 7px;
-        }
-
-        .odo-window {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 3px;
-            padding: 7px 8px;
-            border-radius: 7px;
-            background: #010306;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.9), 0 0 10px rgba(125, 0, 255, 0.08);
-        }
-
-        .odo-digit {
-            min-width: 30px;
-            padding: 2px 3px;
-            text-align: center;
-            font-family: "Courier New", monospace;
-            font-size: 31px;
-            line-height: 1;
-            font-weight: 800;
-            color: #F4F7FF;
-            background: linear-gradient(180deg, #101721, #05080D);
-            border-right: 1px solid rgba(255, 255, 255, 0.07);
-            text-shadow: 0 0 7px rgba(120, 180, 255, 0.28);
-        }
-
-        .odo-digit:last-child {
-            border-right: none;
-        }
-
-        .odo-unit {
-            margin-left: 8px;
-            font-size: 17px;
-            font-weight: 800;
-            color: #DCE4EF;
-            letter-spacing: 1px;
-        }
-
-        .battery-health-title {
-            font-size: 25px;
-            font-weight: 800;
-            color: #F5F5F5;
-            white-space: nowrap;
-        }
-
-        .big-value {
-            font-size: 38px;
-            font-weight: 800;
-            color: #FFFFFF;
-            margin-top: 5px;
-            margin-bottom: 10px;
-        }
-
-        div[data-testid="stVerticalBlock"] > div {
-            gap: 0.25rem;
-        }
-
+    @media(max-width:900px) {
+        .header { grid-template-columns:1fr; gap:6px; text-align:center; }
+        .clock,.ready { text-align:center; }
+        .main .block-container { padding-left:1rem; padding-right:1rem; }
+    }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-st.write("")
-
 st.markdown(
-    """
-    <div class="project-title">
-        ⚡ SMART EV MOTOR PROTECTION SYSTEM
+    f"""
+    <div class="header">
+        <div class="brand"><span>EV</span> <b>SYSTEM</b></div>
+        <div class="clock">{current_time}</div>
+        <div class="ready" style="color:{ready_color}">{ready_label}</div>
     </div>
     """,
     unsafe_allow_html=True
@@ -244,116 +281,21 @@ st.markdown(
 
 st.divider()
 
-top_left, top_middle, top_right = st.columns(
-    [4, 3.4, 4.6]
-)
-
-with top_left:
-
-    if system_on:
-        ready_text = "🟢 READY"
-    else:
-        ready_text = "🔴 NOT READY"
-
-    st.markdown(
-        f"""
-        <div class="ready-text">
-            {ready_text}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-with top_middle:
-
-    st.markdown(
-        f"""
-        <div class="clock-text">
-            {current_time}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-with top_right:
-
-    if system_status == "NORMAL":
-
-        status_html = """
-        <div class="status-text">
-            <span style="color:#49E600;">
-                🟢 STATUS: NORMAL
-            </span>
-        </div>
-        """
-
-    elif system_status == "WARNING":
-
-        status_html = """
-        <div class="status-text">
-            <span style="color:#FF0000;">
-                🔴 STATUS: WARNING
-            </span>
-        </div>
-        """
-
-    elif system_status == "CRITICAL":
-
-        status_html = """
-        <div class="status-text">
-            <span style="color:#FF0000;">
-                🔴 STATUS: CRITICAL
-            </span>
-        </div>
-        """
-
-    elif system_status == "LOAD RISING":
-
-        status_html = """
-        <div class="status-text">
-            <span style="color:#FF0000;">
-                🔴 STATUS: LOAD RISING
-            </span>
-        </div>
-        """
-
-    elif system_status == "NOT CONNECTED":
-
-        status_html = """
-        <div class="status-text">
-            <span style="color:#FF0000;">
-                🔴 STATUS: NOT CONNECTED
-            </span>
-        </div>
-        """
-
-    else:
-
-        status_html = f"""
-        <div class="status-text">
-            <span style="color:#FFFFFF;">
-                STATUS: {system_status}
-            </span>
-        </div>
-        """
-
-    st.markdown(
-        status_html,
-        unsafe_allow_html=True
-    )
-
-st.divider()
-
-left, center, right = st.columns(
-    [3, 5, 3]
-)
+left, center, right = st.columns([3.2, 5, 3.2], gap="medium")
 
 with left:
+    temp_pct = clamp(temperature / 120, 0, 1)
+    current_pct = clamp(current / 30, 0, 1)
 
     st.markdown(
-        """
-        <div class="section-heading">
-            🌡️ TEMPERATURE
+        f"""
+        <div class="card">
+            <div class="card-title">🌡️ &nbsp; TEMP</div>
+            <div class="value blue">{temperature:.0f}<span style="font-size:24px"> °C</span></div>
+            <div class="bar" style="background:linear-gradient(90deg,#55D72D 0%,#55D72D {temp_pct*100:.0f}%,#26313D {temp_pct*100:.0f}%,#26313D 100%)"></div>
+            <div class="bar-line">
+                <span class="a">0</span><span class="b">60</span><span class="c">120</span>
+            </div>
         </div>
         """,
         unsafe_allow_html=True
@@ -361,454 +303,35 @@ with left:
 
     st.markdown(
         f"""
-        <div class="big-value">
-            {temperature:.2f} °C
+        <div class="card">
+            <div class="card-title">⚡ &nbsp; CURRENT</div>
+            <div class="value yellow">{current:.1f}<span style="font-size:24px"> A</span></div>
+            <div class="bar" style="background:linear-gradient(90deg,#55D72D 0%,#55D72D {current_pct*100:.0f}%,#26313D {current_pct*100:.0f}%,#26313D 100%)"></div>
+            <div class="bar-line">
+                <span class="a">0</span><span class="b">15</span><span class="c">30</span>
+            </div>
         </div>
         """,
         unsafe_allow_html=True
-    )
-
-    temperature_percentage = min(
-        max(temperature / 100, 0.0),
-        1.0
-    )
-
-    st.progress(
-        temperature_percentage
-    )
-
-    st.divider()
-
-    st.markdown(
-        """
-        <div class="section-heading">
-            ⚡ CURRENT
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.markdown(
-        f"""
-        <div class="big-value">
-            {current:.2f} A
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    current_percentage = min(
-        max(current / 10, 0.0),
-        1.0
-    )
-
-    st.progress(
-        current_percentage
     )
 
 with center:
-
-    min_speed = 0
-    max_speed = 100
-
-    start_angle = 210
-    end_angle = -30
-
-    outer_radius = 1.0
-    inner_radius = 0.72
-
-    def speed_to_angle(value):
-
-        fraction = (
-            value - min_speed
-        ) / (
-            max_speed - min_speed
-        )
-
-        return (
-            start_angle
-            + fraction * (
-                end_angle - start_angle
-            )
-        )
-
-    def polar_to_xy(
-        radius,
-        angle
-    ):
-
-        radians = math.radians(angle)
-
-        x = radius * math.cos(radians)
-        y = radius * math.sin(radians)
-
-        return x, y
-
-    def create_arc_segment(
-        start_value,
-        end_value,
-        color
-    ):
-
-        points = 50
-
-        outer_points = []
-        inner_points = []
-
-        start = speed_to_angle(
-            start_value
-        )
-
-        end = speed_to_angle(
-            end_value
-        )
-
-        for i in range(points + 1):
-
-            angle = start + (
-                end - start
-            ) * i / points
-
-            x, y = polar_to_xy(
-                outer_radius,
-                angle
-            )
-
-            outer_points.append(
-                (x, y)
-            )
-
-            x, y = polar_to_xy(
-                inner_radius,
-                angle
-            )
-
-            inner_points.append(
-                (x, y)
-            )
-
-        polygon = (
-            outer_points
-            + inner_points[::-1]
-        )
-
-        x_values = [
-            p[0]
-            for p in polygon
-        ]
-
-        y_values = [
-            p[1]
-            for p in polygon
-        ]
-
-        return go.Scatter(
-            x=x_values,
-            y=y_values,
-            mode="lines",
-            fill="toself",
-            fillcolor=color,
-            line={
-                "color": color,
-                "width": 0
-            },
-            hoverinfo="skip",
-            showlegend=False
-        )
-
-    speedometer = go.Figure()
-
-    speedometer.add_trace(
-        create_arc_segment(
-            0,
-            40,
-            "#49E600"
-        )
-    )
-
-    speedometer.add_trace(
-        create_arc_segment(
-            40,
-            55,
-            "#1479E8"
-        )
-    )
-
-    speedometer.add_trace(
-        create_arc_segment(
-            55,
-            100,
-            "#263442"
-        )
-    )
-
-    for value in range(
-        0,
-        101,
-        5
-    ):
-
-        angle = speed_to_angle(
-            value
-        )
-
-        if value % 10 == 0:
-
-            tick_outer = 1.17
-            tick_inner = 1.02
-            tick_width = 6
-
-        else:
-
-            tick_outer = 1.14
-            tick_inner = 1.04
-            tick_width = 4
-
-        x1, y1 = polar_to_xy(
-            tick_outer,
-            angle
-        )
-
-        x2, y2 = polar_to_xy(
-            tick_inner,
-            angle
-        )
-
-        speedometer.add_trace(
-            go.Scatter(
-                x=[
-                    x1,
-                    x2
-                ],
-                y=[
-                    y1,
-                    y2
-                ],
-                mode="lines",
-                line={
-                    "color": "#FFFFFF",
-                    "width": tick_width
-                },
-                hoverinfo="skip",
-                showlegend=False
-            )
-        )
-
-    for value in [
-        0,
-        50,
-        100
-    ]:
-
-        angle = speed_to_angle(
-            value
-        )
-
-        label_radius = 1.31
-
-        x, y = polar_to_xy(
-            label_radius,
-            angle
-        )
-
-        speedometer.add_annotation(
-
-            x=x,
-            y=y,
-
-            text=str(value),
-
-            showarrow=False,
-
-            font={
-                "size": 22,
-                "color": "#FFFFFF",
-                "family": "Arial"
-            },
-
-            xanchor="center",
-            yanchor="middle"
-        )
-
-    speed_angle = speed_to_angle(
-        speed
-    )
-
-    indicator_outer = 1.00
-    indicator_inner = 0.74
-
-    x1, y1 = polar_to_xy(
-        indicator_outer,
-        speed_angle
-    )
-
-    x2, y2 = polar_to_xy(
-        indicator_inner,
-        speed_angle
-    )
-
-    speedometer.add_trace(
-        go.Scatter(
-
-            x=[
-                x1,
-                x2
-            ],
-
-            y=[
-                y1,
-                y2
-            ],
-
-            mode="lines",
-
-            line={
-                "color": "#FFFFFF",
-                "width": 7
-            },
-
-            hoverinfo="skip",
-            showlegend=False
-        )
-    )
-
-    speedometer.add_annotation(
-
-        x=0,
-        y=0.04,
-
-        text=f"{speed:.0f}",
-
-        showarrow=False,
-
-        font={
-            "size": 76,
-            "color": "#FFFFFF",
-            "family": "Arial"
-        },
-
-        xanchor="center",
-        yanchor="middle"
-    )
-
-    speedometer.add_annotation(
-
-        x=0,
-        y=-0.25,
-
-        text="km/h",
-
-        showarrow=False,
-
-        font={
-            "size": 25,
-            "color": "#FFFFFF",
-            "family": "Arial"
-        },
-
-        xanchor="center",
-        yanchor="middle"
-    )
-
-    speedometer.update_layout(
-
-        height=470,
-
-        margin={
-            "l": 10,
-            "r": 10,
-            "t": 10,
-            "b": 5
-        },
-
-        paper_bgcolor="rgba(0,0,0,0)",
-
-        plot_bgcolor="rgba(0,0,0,0)",
-
-        showlegend=False,
-
-        xaxis={
-            "visible": False,
-            "range": [
-                -1.45,
-                1.45
-            ],
-            "fixedrange": True
-        },
-
-        yaxis={
-            "visible": False,
-            "range": [
-                -1.40,
-                1.40
-            ],
-            "fixedrange": True,
-
-            "scaleanchor": "x",
-            "scaleratio": 1
-        }
-    )
-
     st.plotly_chart(
-
-        speedometer,
-
+        gauge_figure(speed),
         use_container_width=True,
-
-        config={
-            "displayModeBar": False,
-            "staticPlot": True
-        }
+        config={"displayModeBar": False, "staticPlot": True}
     )
 
 with right:
-
-    st.markdown(
-        """
-        <div class="section-heading">
-            🌀 FAN
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    if fan_on:
-
-        st.markdown(
-            """
-            <div class="big-value">
-                ON
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    else:
-
-        st.markdown(
-            """
-            <div class="big-value">
-                OFF
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+    fan_color = "#55D72D" if fan_on else "#AEB8C4"
+    fan_state = "ON" if fan_on else "OFF"
 
     st.markdown(
         f"""
-        <div class="sub-heading">
-            {fan_mode}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.divider()
-
-    st.markdown(
-        """
-        <div class="section-heading">
-            🔋 VOLTAGE
+        <div class="card status-card">
+            <div class="card-title"><span class="fan-icon">🌀</span> FAN</div>
+            <div class="status" style="color:{fan_color}">{fan_state}</div>
+            <div class="sub">AUTO MODE</div>
         </div>
         """,
         unsafe_allow_html=True
@@ -816,76 +339,55 @@ with right:
 
     st.markdown(
         f"""
-        <div class="big-value">
-            {voltage:.2f} V
+        <div class="card status-card">
+            <div class="card-title">🔋 &nbsp; VOLTAGE</div>
+            <div class="value blue">{voltage:.1f}<span style="font-size:24px"> V</span></div>
+            <div class="sub">3S BATTERY PACK</div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    voltage_percentage = min(
-        max(voltage / 12, 0.0),
-        1.0
-    )
-
-    st.progress(
-        voltage_percentage
-    )
-
-st.divider()
-
-battery_col, empty_middle, odo_col, range_col = st.columns(
-    [2.5, 1.5, 3, 3]
-)
-
-with battery_col:
-
     st.markdown(
-        '<div class="battery-health-title">🔋 BATTERY HEALTH</div>',
+        f"""
+        <div class="card status-card">
+            <div class="card-title">🛡️ &nbsp; STATUS</div>
+            <div class="status" style="color:{status_color}">{status_label}</div>
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
-    if battery_health is None:
-        battery_health_text = "-- %"
-    else:
-        battery_health_text = f"{float(battery_health):.0f} %"
+st.markdown('<div class="bottom">', unsafe_allow_html=True)
+b1, b2, b3, b4 = st.columns([1.5, 2.4, 2.5, 2.2])
 
+with b1:
     st.markdown(
-        f"# {battery_health_text}"
-    )
-
-with odo_col:
-
-    odo_value = max(0, int(odo))
-    odo_digits = f"{odo_value:06d}"[-6:]
-
-    st.markdown(
-        f"""<div class="odo-card">
-            <div class="odo-label">ODO</div>
-            <div class="odo-window">
-                {"".join(f'<span class="odo-digit">{digit}</span>' for digit in odo_digits)}
-                <span class="odo-unit">KM</span>
-            </div>
-        </div>""",
+        '<div class="bottom-label">💡 LIGHTS</div><div class="bottom-value green">READY</div>',
         unsafe_allow_html=True
     )
 
-with range_col:
-
+with b2:
+    health_text = f"{float(battery_health):.0f} %" if battery_health is not None else "-- %"
     st.markdown(
-        "## 🛣️ RANGE"
+        f'<div class="bottom-label">BATTERY HEALTH</div><div class="bottom-value battery-value">{health_text}</div>',
+        unsafe_allow_html=True
     )
 
+with b3:
     st.markdown(
-        f"# {range_km} km"
+        f'<div class="bottom-label">ODO</div><div class="bottom-value">{odo:06d} KM</div>',
+        unsafe_allow_html=True
     )
 
-st.divider()
+with b4:
+    st.markdown(
+        f'<div class="bottom-label">RANGE</div><div class="bottom-value">{range_km} KM</div>',
+        unsafe_allow_html=True
+    )
 
-st.caption(
-    f"Last updated: {current_date} {current_time}"
-)
+st.markdown('</div>', unsafe_allow_html=True)
+st.caption(f"Last updated: {current_date} {current_time}")
 
-time.sleep(0.5)
-
+time.sleep(0.7)
 st.rerun()
