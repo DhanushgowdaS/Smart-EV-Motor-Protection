@@ -115,13 +115,11 @@ const float TEMP_CHANGE = 0.3;
 // FAN
 // ============================================================
 
-const float FAN_ON_TEMP = 30.0;
-const float FAN_OFF_TEMP = 30.0;
-const unsigned long FAN_MIN_HOLD = 5000;
-const unsigned long FAN_MAX_HOLD = 10000;
+const float FAN_ON_TEMP = 31.0;
+const float FAN_OFF_TEMP = 29.0;
 
-unsigned long fanHoldUntil = 0;
-
+// ============================================================
+// TEMPERATURE PROTECTION
 // ============================================================
 // TEMPERATURE PROTECTION
 // ============================================================
@@ -2042,12 +2040,6 @@ void loop() {
     // FAN
     // ========================================================
 
-    bool fanON =
-        false;
-
-    unsigned long currentTime =
-        millis();
-
     static bool fanState = false;
 
     if (
@@ -2056,38 +2048,17 @@ void loop() {
     ) {
 
         fanState = true;
-
-        fanHoldUntil =
-            currentTime +
-            random(
-                FAN_MIN_HOLD,
-                FAN_MAX_HOLD + 1
-            );
     }
 
     if (
         fanState &&
-        currentTime >= fanHoldUntil
+        temperature <= FAN_OFF_TEMP
     ) {
 
-        if (
-            temperature < FAN_OFF_TEMP
-        ) {
-
-            fanState = false;
-
-        } else {
-
-            fanHoldUntil =
-                currentTime +
-                random(
-                    FAN_MIN_HOLD,
-                    FAN_MAX_HOLD + 1
-                );
-        }
+        fanState = false;
     }
 
-    fanON = fanState;
+    bool fanON = fanState;
 
     if (fanON) {
 
