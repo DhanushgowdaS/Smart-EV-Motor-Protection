@@ -34,6 +34,7 @@ if data is None:
     system_on = False
     system_status = "NOT CONNECTED"
     speed = 0.0
+    battery_health = None
 
 else:
     temperature = float(data.get("temperature", 0.0))
@@ -348,106 +349,38 @@ with center:
     min_speed = 0
     max_speed = 100
 
-    start_angle = 210
-    end_angle = -30
-
-    outer_radius = 1.0
-    inner_radius = 0.72
+    start_angle = 220
+    end_angle = -40
 
     def speed_to_angle(value):
+        fraction = (value - min_speed) / (max_speed - min_speed)
+        return start_angle + fraction * (end_angle - start_angle)
 
-        fraction = (
-            value - min_speed
-        ) / (
-            max_speed - min_speed
-        )
-
-        return (
-            start_angle
-            + fraction * (
-                end_angle - start_angle
-            )
-        )
-
-    def polar_to_xy(
-        radius,
-        angle
-    ):
-
+    def polar_to_xy(radius, angle):
         radians = math.radians(angle)
+        return radius * math.cos(radians), radius * math.sin(radians)
 
-        x = radius * math.cos(radians)
-        y = radius * math.sin(radians)
+    def create_arc_segment(start_value, end_value, color, width=22, radius=1.0):
+        points = 80
+        x_values = []
+        y_values = []
 
-        return x, y
-
-    def create_arc_segment(
-        start_value,
-        end_value,
-        color
-    ):
-
-        points = 50
-
-        outer_points = []
-        inner_points = []
-
-        start = speed_to_angle(
-            start_value
-        )
-
-        end = speed_to_angle(
-            end_value
-        )
+        start = speed_to_angle(start_value)
+        end = speed_to_angle(end_value)
 
         for i in range(points + 1):
-
-            angle = start + (
-                end - start
-            ) * i / points
-
-            x, y = polar_to_xy(
-                outer_radius,
-                angle
-            )
-
-            outer_points.append(
-                (x, y)
-            )
-
-            x, y = polar_to_xy(
-                inner_radius,
-                angle
-            )
-
-            inner_points.append(
-                (x, y)
-            )
-
-        polygon = (
-            outer_points
-            + inner_points[::-1]
-        )
-
-        x_values = [
-            p[0]
-            for p in polygon
-        ]
-
-        y_values = [
-            p[1]
-            for p in polygon
-        ]
+            angle = start + (end - start) * i / points
+            x, y = polar_to_xy(radius, angle)
+            x_values.append(x)
+            y_values.append(y)
 
         return go.Scatter(
             x=x_values,
             y=y_values,
             mode="lines",
-            fill="toself",
-            fillcolor=color,
             line={
                 "color": color,
-                "width": 0
+                "width": width
             },
             hoverinfo="skip",
             showlegend=False
@@ -455,11 +388,70 @@ with center:
 
     speedometer = go.Figure()
 
+    # Deep instrument face
+    face_points = 160
+    face_x = []
+    face_y = []
+
+    for i in range(face_points + 1):
+        angle = 360 * i / face_points
+        x, y = polar_to_xy(1.08, angle)
+        face_x.append(x)
+        face_y.append(y)
+
+    speedometer.add_trace(
+        go.Scatter(
+            x=face_x,
+            y=face_y,
+            mode="lines",
+            fill="toself",
+            fillcolor="#06111B",
+            line={
+                "color": "#0D1822",
+                "width": 2
+            },
+            hoverinfo="skip",
+            showlegend=False
+        )
+    )
+
+    # Premium outer bezel
+    speedometer.add_trace(
+        go.Scatter(
+            x=face_x,
+            y=face_y,
+            mode="lines",
+            line={
+                "color": "#5E6A75",
+                "width": 12
+            },
+            hoverinfo="skip",
+            showlegend=False
+        )
+    )
+
+    speedometer.add_trace(
+        go.Scatter(
+            x=face_x,
+            y=face_y,
+            mode="lines",
+            line={
+                "color": "#121D27",
+                "width": 7
+            },
+            hoverinfo="skip",
+            showlegend=False
+        )
+    )
+
+    # Colored performance arc
     speedometer.add_trace(
         create_arc_segment(
             0,
             40,
-            "#49E600"
+            "#49E600",
+            24,
+            1.00
         )
     )
 
@@ -467,7 +459,9 @@ with center:
         create_arc_segment(
             40,
             55,
-            "#1479E8"
+            "#1479E8",
+            24,
+            1.00
         )
     )
 
@@ -475,55 +469,60 @@ with center:
         create_arc_segment(
             55,
             100,
-            "#263442"
+            "#263442",
+            24,
+            1.00
         )
     )
 
-    for value in range(
-        0,
-        101,
-        5
-    ):
+    # Inner highlight ring
+    inner_points = 160
+    inner_x = []
+    inner_y = []
 
-        angle = speed_to_angle(
-            value
+    for i in range(inner_points + 1):
+        angle = 360 * i / inner_points
+        x, y = polar_to_xy(0.82, angle)
+        inner_x.append(x)
+        inner_y.append(y)
+
+    speedometer.add_trace(
+        go.Scatter(
+            x=inner_x,
+            y=inner_y,
+            mode="lines",
+            line={
+                "color": "#152431",
+                "width": 2
+            },
+            hoverinfo="skip",
+            showlegend=False
         )
+    )
+
+    # Automotive-style graduations
+    for value in range(0, 101, 2):
+        angle = speed_to_angle(value)
 
         if value % 10 == 0:
-
-            tick_outer = 1.17
-            tick_inner = 1.02
-            tick_width = 6
-
+            tick_outer = 1.19
+            tick_inner = 1.08
+            tick_width = 5
         else:
+            tick_outer = 1.17
+            tick_inner = 1.105
+            tick_width = 2
 
-            tick_outer = 1.14
-            tick_inner = 1.04
-            tick_width = 4
-
-        x1, y1 = polar_to_xy(
-            tick_outer,
-            angle
-        )
-
-        x2, y2 = polar_to_xy(
-            tick_inner,
-            angle
-        )
+        x1, y1 = polar_to_xy(tick_outer, angle)
+        x2, y2 = polar_to_xy(tick_inner, angle)
 
         speedometer.add_trace(
             go.Scatter(
-                x=[
-                    x1,
-                    x2
-                ],
-                y=[
-                    y1,
-                    y2
-                ],
+                x=[x1, x2],
+                y=[y1, y2],
                 mode="lines",
                 line={
-                    "color": "#FFFFFF",
+                    "color": "#F4F7FA",
                     "width": tick_width
                 },
                 hoverinfo="skip",
@@ -531,167 +530,157 @@ with center:
             )
         )
 
-    for value in [
-        0,
-        50,
-        100
-    ]:
-
-        angle = speed_to_angle(
-            value
-        )
-
-        label_radius = 1.31
-
-        x, y = polar_to_xy(
-            label_radius,
-            angle
-        )
+    # Numeric scale
+    for value in range(0, 101, 10):
+        angle = speed_to_angle(value)
+        x, y = polar_to_xy(1.34, angle)
 
         speedometer.add_annotation(
-
             x=x,
             y=y,
-
             text=str(value),
-
             showarrow=False,
-
             font={
-                "size": 22,
-                "color": "#FFFFFF",
+                "size": 17,
+                "color": "#E9EEF2",
                 "family": "Arial"
             },
-
             xanchor="center",
             yanchor="middle"
         )
 
-    speed_angle = speed_to_angle(
-        speed
+    # Digital center display
+    speedometer.add_annotation(
+        x=0,
+        y=0.13,
+        text=f"{speed:.0f}",
+        showarrow=False,
+        font={
+            "size": 72,
+            "color": "#FFFFFF",
+            "family": "Arial Black"
+        },
+        xanchor="center",
+        yanchor="middle"
     )
 
-    indicator_outer = 1.00
-    indicator_inner = 0.74
-
-    x1, y1 = polar_to_xy(
-        indicator_outer,
-        speed_angle
+    speedometer.add_annotation(
+        x=0,
+        y=-0.18,
+        text="km/h",
+        showarrow=False,
+        font={
+            "size": 22,
+            "color": "#D7E0E8",
+            "family": "Arial"
+        },
+        xanchor="center",
+        yanchor="middle"
     )
 
-    x2, y2 = polar_to_xy(
-        indicator_inner,
-        speed_angle
-    )
+    # Needle shadow
+    speed_angle = speed_to_angle(speed)
+
+    x1, y1 = polar_to_xy(0.91, speed_angle)
+    x2, y2 = polar_to_xy(0.17, speed_angle)
 
     speedometer.add_trace(
         go.Scatter(
-
-            x=[
-                x1,
-                x2
-            ],
-
-            y=[
-                y1,
-                y2
-            ],
-
+            x=[x1 + 0.018, x2 + 0.018],
+            y=[y1 - 0.018, y2 - 0.018],
             mode="lines",
-
             line={
-                "color": "#FFFFFF",
-                "width": 7
+                "color": "rgba(0,0,0,0.75)",
+                "width": 11
             },
-
             hoverinfo="skip",
             showlegend=False
         )
     )
 
-    speedometer.add_annotation(
-
-        x=0,
-        y=0.04,
-
-        text=f"{speed:.0f}",
-
-        showarrow=False,
-
-        font={
-            "size": 76,
-            "color": "#FFFFFF",
-            "family": "Arial"
-        },
-
-        xanchor="center",
-        yanchor="middle"
+    # Needle
+    speedometer.add_trace(
+        go.Scatter(
+            x=[x1, x2],
+            y=[y1, y2],
+            mode="lines",
+            line={
+                "color": "#FF5A36",
+                "width": 6
+            },
+            hoverinfo="skip",
+            showlegend=False
+        )
     )
 
-    speedometer.add_annotation(
+    # Needle tip
+    tip_x, tip_y = polar_to_xy(0.98, speed_angle)
 
-        x=0,
-        y=-0.25,
+    speedometer.add_trace(
+        go.Scatter(
+            x=[tip_x],
+            y=[tip_y],
+            mode="markers",
+            marker={
+                "size": 9,
+                "color": "#FF6B45",
+                "line": {
+                    "color": "#FFFFFF",
+                    "width": 1
+                }
+            },
+            hoverinfo="skip",
+            showlegend=False
+        )
+    )
 
-        text="km/h",
-
-        showarrow=False,
-
-        font={
-            "size": 25,
-            "color": "#FFFFFF",
-            "family": "Arial"
-        },
-
-        xanchor="center",
-        yanchor="middle"
+    # Central metallic hub
+    speedometer.add_trace(
+        go.Scatter(
+            x=[0],
+            y=[0],
+            mode="markers",
+            marker={
+                "size": 18,
+                "color": "#1B2732",
+                "line": {
+                    "color": "#D6DEE5",
+                    "width": 3
+                }
+            },
+            hoverinfo="skip",
+            showlegend=False
+        )
     )
 
     speedometer.update_layout(
-
-        height=470,
-
+        height=500,
         margin={
             "l": 10,
             "r": 10,
-            "t": 10,
+            "t": 8,
             "b": 5
         },
-
         paper_bgcolor="rgba(0,0,0,0)",
-
         plot_bgcolor="rgba(0,0,0,0)",
-
         showlegend=False,
-
         xaxis={
             "visible": False,
-            "range": [
-                -1.45,
-                1.45
-            ],
+            "range": [-1.48, 1.48],
             "fixedrange": True
         },
-
         yaxis={
             "visible": False,
-            "range": [
-                -1.40,
-                1.40
-            ],
+            "range": [-1.48, 1.48],
             "fixedrange": True,
-
             "scaleanchor": "x",
             "scaleratio": 1
         }
     )
 
     st.plotly_chart(
-
         speedometer,
-
         use_container_width=True,
-
         config={
             "displayModeBar": False,
             "staticPlot": True
