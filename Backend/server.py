@@ -40,6 +40,14 @@ class SensorData(BaseModel):
 
     speed: float
 
+    battery_health: float
+
+    battery_soc: float
+
+    battery_capacity_ah: float
+
+    battery_current: float
+
 
 # ============================================================
 # LATEST DATA
@@ -68,6 +76,14 @@ latest_data = {
     "motor_status": "OFF",
 
     "speed": 0.0,
+
+    "battery_health": 100.0,
+
+    "battery_soc": 100.0,
+
+    "battery_capacity_ah": 2.0,
+
+    "battery_current": 0.0,
 
     "timestamp": None
 }
