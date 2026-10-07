@@ -61,7 +61,35 @@ st.markdown(
     <style>
 
         .stApp {
-            background-color: #02070B;
+            background:
+                radial-gradient(circle at 15% 20%, rgba(125, 0, 255, 0.16), transparent 32%),
+                radial-gradient(circle at 85% 25%, rgba(0, 180, 255, 0.12), transparent 30%),
+                radial-gradient(circle at 50% 90%, rgba(180, 0, 255, 0.10), transparent 35%),
+                #02070B;
+            background-attachment: fixed;
+        }
+
+        .stApp::before {
+            content: "";
+            position: fixed;
+            inset: -20%;
+            pointer-events: none;
+            z-index: 0;
+            background:
+                radial-gradient(circle at 20% 30%, rgba(145, 0, 255, 0.10), transparent 22%),
+                radial-gradient(circle at 80% 65%, rgba(0, 140, 255, 0.08), transparent 20%);
+            filter: blur(35px);
+            animation: uvGlow 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes uvGlow {
+            0% { transform: scale(1) translate3d(-1%, -1%, 0); opacity: 0.65; }
+            100% { transform: scale(1.08) translate3d(1%, 1%, 0); opacity: 1; }
+        }
+
+        .main .block-container {
+            position: relative;
+            z-index: 1;
         }
 
         [data-testid="stHeader"] {
