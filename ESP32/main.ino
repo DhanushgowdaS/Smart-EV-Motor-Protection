@@ -121,8 +121,6 @@ const float FAN_OFF_TEMP = 29.0;
 // ============================================================
 // TEMPERATURE PROTECTION
 // ============================================================
-// TEMPERATURE PROTECTION
-// ============================================================
 
 // System shuts OFF when temperature is greater than 35 C
 const float CRITICAL_TEMP = 35.0;
