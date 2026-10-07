@@ -64,51 +64,24 @@ st.markdown(
             background-color: #02070B;
             background-image:
                 radial-gradient(circle at 50% 45%, rgba(20,121,232,0.10), transparent 38%),
-                radial-gradient(circle at 10% 90%, rgba(73,230,0,0.06), transparent 25%);
-            position: relative;
-        }
-
-        .stApp::before {
-            content: "";
-            position: fixed;
-            top: -10%;
-            left: -20%;
-            width: 45%;
-            height: 120%;
-            pointer-events: none;
-            background: linear-gradient(90deg, transparent, rgba(20,121,232,0.08), transparent);
-            transform: rotate(18deg);
-            animation: neonSweep 9s ease-in-out infinite;
-            z-index: 0;
-        }
-
-        .stApp::after {
-            content: "";
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            background-image: radial-gradient(circle, rgba(255,255,255,0.16) 1px, transparent 1.5px);
-            background-size: 90px 90px;
-            opacity: 0.18;
-            animation: particleDrift 20s linear infinite;
-            z-index: 0;
-        }
-
-        .block-container {
-            position: relative;
-            z-index: 1;
+                radial-gradient(circle at 10% 90%, rgba(73,230,0,0.06), transparent 25%),
+                radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1.5px),
+                linear-gradient(108deg, transparent 42%, rgba(20,121,232,0.08) 50%, transparent 58%);
+            background-size: auto, auto, 90px 90px, 220% 100%;
+            background-position: center, center, 0 0, -120% 0;
+            animation: particleDrift 20s linear infinite, neonSweep 9s ease-in-out infinite;
         }
 
         @keyframes neonSweep {
-            0% { left: -45%; opacity: 0; }
-            15% { opacity: 1; }
-            55% { left: 105%; opacity: 0.7; }
-            100% { left: 105%; opacity: 0; }
+            0% { background-position: center, center, 0 0, -120% 0; }
+            15% { background-position: center, center, 13px 13px, -80% 0; }
+            55% { background-position: center, center, 45px 45px, 80% 0; }
+            100% { background-position: center, center, 90px 90px, 120% 0; }
         }
 
         @keyframes particleDrift {
-            from { background-position: 0 0; }
-            to { background-position: 90px 90px; }
+            0% { background-position: center, center, 0 0, -120% 0; }
+            100% { background-position: center, center, 90px 90px, -120% 0; }
         }
 
         [data-testid="stHeader"] {
