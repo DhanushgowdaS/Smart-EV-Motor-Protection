@@ -63,21 +63,52 @@ st.markdown(
         .stApp {
             background-color: #02070B;
             background-image:
-                radial-gradient(circle at 15% 20%, rgba(20,121,232,0.10) 0%, transparent 28%),
-                radial-gradient(circle at 85% 75%, rgba(73,230,0,0.07) 0%, transparent 30%),
-                linear-gradient(rgba(20,121,232,0.035) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(20,121,232,0.035) 1px, transparent 1px);
-            background-size: auto, auto, 55px 55px, 55px 55px;
-            animation: backgroundMove 18s linear infinite;
+                radial-gradient(circle at 50% 45%, rgba(20,121,232,0.10), transparent 38%),
+                radial-gradient(circle at 10% 90%, rgba(73,230,0,0.06), transparent 25%);
+            position: relative;
         }
 
-        @keyframes backgroundMove {
-            from {
-                background-position: 0 0, 0 0, 0 0, 0 0;
-            }
-            to {
-                background-position: 0 0, 0 0, 55px 55px, 55px 55px;
-            }
+        .stApp::before {
+            content: "";
+            position: fixed;
+            top: -10%;
+            left: -20%;
+            width: 45%;
+            height: 120%;
+            pointer-events: none;
+            background: linear-gradient(90deg, transparent, rgba(20,121,232,0.08), transparent);
+            transform: rotate(18deg);
+            animation: neonSweep 9s ease-in-out infinite;
+            z-index: 0;
+        }
+
+        .stApp::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.16) 1px, transparent 1.5px);
+            background-size: 90px 90px;
+            opacity: 0.18;
+            animation: particleDrift 20s linear infinite;
+            z-index: 0;
+        }
+
+        .block-container {
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes neonSweep {
+            0% { left: -45%; opacity: 0; }
+            15% { opacity: 1; }
+            55% { left: 105%; opacity: 0.7; }
+            100% { left: 105%; opacity: 0; }
+        }
+
+        @keyframes particleDrift {
+            from { background-position: 0 0; }
+            to { background-position: 90px 90px; }
         }
 
         [data-testid="stHeader"] {
