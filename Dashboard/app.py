@@ -349,7 +349,7 @@ with center:
     min_speed = 0
     max_speed = 100
 
-    # Reference-style automotive digital speedometer
+    # Exact reference-style automotive digital speedometer
     start_angle = 180
     end_angle = 0
 
@@ -361,8 +361,8 @@ with center:
         radians = math.radians(angle)
         return radius * math.cos(radians), radius * math.sin(radians)
 
-    def create_arc_segment(start_value, end_value, color, width):
-        points = 120
+    def create_arc_segment(start_value, end_value, color, width, radius):
+        points = 160
         x_values = []
         y_values = []
 
@@ -371,7 +371,7 @@ with center:
 
         for i in range(points + 1):
             angle = start + (end - start) * i / points
-            x, y = polar_to_xy(1.0, angle)
+            x, y = polar_to_xy(radius, angle)
             x_values.append(x)
             y_values.append(y)
 
@@ -389,55 +389,47 @@ with center:
 
     speedometer = go.Figure()
 
-    # Black automotive gauge face
-    speedometer.add_shape(
-        type="rect",
-        x0=-1.2,
-        x1=1.2,
-        y0=-0.58,
-        y1=1.18,
-        line={"width": 0},
-        fillcolor="#000000",
-        layer="below"
-    )
-
-    # Thick grey outer bezel
+    # Outer grey bezel
     speedometer.add_trace(
         create_arc_segment(
             0,
             100,
             "#424242",
-            25
+            22,
+            1.0
         )
     )
 
-    # Green safe zone
+    # Inner green safe zone
     speedometer.add_trace(
         create_arc_segment(
             0,
-            40,
+            30,
             "#59D900",
-            20
+            18,
+            0.94
         )
     )
 
-    # Grey normal zone
+    # Inner grey normal zone
     speedometer.add_trace(
         create_arc_segment(
-            40,
-            85,
+            30,
+            88,
             "#424242",
-            20
+            18,
+            0.94
         )
     )
 
-    # Red high-speed zone
+    # Inner red high-speed zone
     speedometer.add_trace(
         create_arc_segment(
-            85,
+            88,
             100,
             "#FF0000",
-            20
+            18,
+            0.94
         )
     )
 
@@ -451,11 +443,11 @@ with center:
             tick_width = 3.0
         elif value % 10 == 0:
             tick_outer = 1.00
-            tick_inner = 0.89
+            tick_inner = 0.88
             tick_width = 2.0
         else:
             tick_outer = 1.00
-            tick_inner = 0.93
+            tick_inner = 0.92
             tick_width = 1.4
 
         x1, y1 = polar_to_xy(tick_outer, angle)
@@ -475,10 +467,9 @@ with center:
             )
         )
 
-    # Labels inside the arc
+    # Main 0-100 labels
     for value in range(0, 101, 20):
-        angle = speed_to_angle(value)
-        x, y = polar_to_xy(0.73, angle)
+        x, y = polar_to_xy(0.70, speed_to_angle(value))
 
         speedometer.add_annotation(
             x=x,
@@ -497,11 +488,11 @@ with center:
     # Large blue digital speed
     speedometer.add_annotation(
         x=-0.02,
-        y=-0.08,
+        y=0.205,
         text=f"{speed:.0f}",
         showarrow=False,
         font={
-            "size": 82,
+            "size": 100,
             "color": "#178EDA",
             "family": "Arial"
         },
@@ -509,10 +500,10 @@ with center:
         yanchor="middle"
     )
 
-    # km/hr at the lower-right of the speed
+    # Unit at the lower-right of the speed
     speedometer.add_annotation(
         x=0.30,
-        y=-0.18,
+        y=0.02,
         text="km/hr",
         showarrow=False,
         font={
@@ -524,10 +515,10 @@ with center:
         yanchor="middle"
     )
 
-    # Odometer inside the gauge
+    # Digital odometer below the speed
     speedometer.add_annotation(
         x=0,
-        y=-0.43,
+        y=-0.15,
         text="1 3 9 4 9 km",
         showarrow=False,
         font={
@@ -540,24 +531,24 @@ with center:
     )
 
     speedometer.update_layout(
-        height=390,
+        height=330,
         margin={
             "l": 0,
             "r": 0,
             "t": 0,
             "b": 0
         },
-        paper_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="#000000",
         plot_bgcolor="#000000",
         showlegend=False,
         xaxis={
             "visible": False,
-            "range": [-1.16, 1.16],
+            "range": [-1.14, 1.14],
             "fixedrange": True
         },
         yaxis={
             "visible": False,
-            "range": [-0.58, 1.18],
+            "range": [-0.24, 1.08],
             "fixedrange": True,
             "scaleanchor": "x",
             "scaleratio": 1
