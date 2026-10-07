@@ -46,7 +46,7 @@ else:
     speed = float(data.get("speed", 0.0))
     battery_health = data.get("battery_health", None)
 
-    speed = max(0.0, min(speed, 60.0))
+    speed = max(0.0, min(speed, 100.0))
 
 odo = 1256
 range_km = 78
@@ -347,7 +347,7 @@ with left:
 with center:
 
     min_speed = 0
-    max_speed = 60
+    max_speed = 100
 
     if "display_speed" not in st.session_state:
         st.session_state.display_speed = 0
@@ -405,7 +405,7 @@ with center:
     speedometer.add_trace(
         create_arc_segment(
             0,
-            60,
+            100,
             "#424242",
             22,
             1.0
@@ -437,8 +437,8 @@ with center:
     # Inner red high-speed zone
     speedometer.add_trace(
         create_arc_segment(
-            52.8,
-            60,
+            88,
+            100,
             "#FF0000",
             18,
             0.94
@@ -446,7 +446,7 @@ with center:
     )
 
     # Fine and major automotive tick marks
-    for value in range(0, 61, 2):
+    for value in range(0, 101, 2):
         angle = speed_to_angle(value)
 
         if value % 20 == 0:
@@ -480,7 +480,7 @@ with center:
         )
 
     # Main 0-100 labels
-    for value in range(0, 61, 10):
+    for value in range(0, 101, 20):
         x, y = polar_to_xy(0.70, speed_to_angle(value))
 
         speedometer.add_annotation(
