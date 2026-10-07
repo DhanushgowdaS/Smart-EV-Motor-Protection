@@ -46,7 +46,7 @@ else:
     speed = float(data.get("speed", 0.0))
     battery_health = data.get("battery_health", None)
 
-    speed = max(0.0, min(speed, 100.0))
+    speed = max(0.0, min(speed, 60.0))
 
 odo = 1256
 range_km = 78
@@ -347,7 +347,19 @@ with left:
 with center:
 
     min_speed = 0
-    max_speed = 100
+    max_speed = 60
+
+    if "display_speed" not in st.session_state:
+        st.session_state.display_speed = 0
+
+    target_speed = int(round(speed))
+
+    if st.session_state.display_speed < target_speed:
+        st.session_state.display_speed += 1
+    elif st.session_state.display_speed > target_speed:
+        st.session_state.display_speed -= 1
+
+    display_speed = st.session_state.display_speed
 
     # Exact reference-style automotive digital speedometer
     start_angle = 180
@@ -393,7 +405,7 @@ with center:
     speedometer.add_trace(
         create_arc_segment(
             0,
-            100,
+            60,
             "#424242",
             22,
             1.0
@@ -425,8 +437,8 @@ with center:
     # Inner red high-speed zone
     speedometer.add_trace(
         create_arc_segment(
-            88,
-            100,
+            52.8,
+            60,
             "#FF0000",
             18,
             0.94
@@ -434,7 +446,7 @@ with center:
     )
 
     # Fine and major automotive tick marks
-    for value in range(0, 101, 2):
+    for value in range(0, 61, 2):
         angle = speed_to_angle(value)
 
         if value % 20 == 0:
@@ -468,7 +480,7 @@ with center:
         )
 
     # Main 0-100 labels
-    for value in range(0, 101, 20):
+    for value in range(0, 61, 10):
         x, y = polar_to_xy(0.70, speed_to_angle(value))
 
         speedometer.add_annotation(
@@ -489,7 +501,7 @@ with center:
     speedometer.add_annotation(
         x=-0.02,
         y=0.205,
-        text=f"{speed:.0f}",
+        text=f"{display_speed}",
         showarrow=False,
         font={
             "size": 100,
@@ -683,6 +695,6 @@ st.caption(
     f"Last updated: {current_date} {current_time}"
 )
 
-time.sleep(0.5)
+time.sleep(0.1)
 
 st.rerun()
