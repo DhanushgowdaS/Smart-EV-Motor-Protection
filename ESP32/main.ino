@@ -202,6 +202,9 @@ volatile float rightDistance = -1.0;
 
 bool temperatureShutdown = false;
 
+unsigned long accidentRampStart = 0;
+bool accidentRampActive = false;
+
 // ============================================================
 // EMERGENCY MOTOR STOP
 // ============================================================
@@ -209,7 +212,6 @@ bool temperatureShutdown = false;
 void emergencyMotorStop() {
 
     speed = 0.0;
-
     motorPWM = 0;
 
     analogWrite(
@@ -218,6 +220,51 @@ void emergencyMotorStop() {
     );
 
     lastSystemState = false;
+}
+
+void startAccidentMotorRamp() {
+
+    if (accidentRampActive) {
+        return;
+    }
+
+    accidentRampActive = true;
+    accidentRampStart = millis();
+    motorPWM = PWM_MAX;
+    speed = MAX_SPEED;
+    analogWrite(MOTOR_PWM_PIN, motorPWM);
+}
+
+void updateAccidentMotorRamp() {
+
+    if (!accidentRampActive) {
+        return;
+    }
+
+    unsigned long elapsed =
+        millis() - accidentRampStart;
+
+    if (elapsed >= 5000) {
+
+        motorPWM = 0;
+        speed = 0.0;
+        accidentRampActive = false;
+
+    } else {
+
+        motorPWM =
+            PWM_MAX -
+            ((unsigned long)PWM_MAX * elapsed / 5000);
+
+        speed =
+            MAX_SPEED *
+            ((float)motorPWM / PWM_MAX);
+    }
+
+    analogWrite(
+        MOTOR_PWM_PIN,
+        motorPWM
+    );
 }
 
 // ============================================================
@@ -321,7 +368,7 @@ void ultrasonicSafetyTask(void *parameter) {
 
             accidentDetected = true;
 
-            emergencyMotorStop();
+            startAccidentMotorRamp();
 
             Serial.println();
             Serial.println(
@@ -2174,12 +2221,10 @@ void loop() {
 
     if (accidentDetected) {
 
-        // Permanent accident shutdown
-        emergencyMotorStop();
+        updateAccidentMotorRamp();
 
     } else if (temperatureShutdown) {
 
-        // Temperature emergency shutdown
         emergencyMotorStop();
 
     } else {
@@ -2189,7 +2234,6 @@ void loop() {
             systemON
         );
     }
-
     // ========================================================
     // OLED
     // ========================================================
