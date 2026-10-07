@@ -6,6 +6,7 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <Preferences.h>
 
 // ============================================================
 // WIFI
@@ -23,6 +24,7 @@ const char* SERVER_URL =
 
 const int VOLTAGE_PIN = 34;
 const int CURRENT_PIN = 35;
+const int BATTERY_CURRENT_PIN = 39;
 const int TEMP_PIN = 4;
 const int RELAY_PIN = 13;
 
@@ -95,6 +97,13 @@ const float CURRENT_SENSITIVITY = 0.066;
 
 const float VOLTAGE_RATIO = 5.0;
 
+const float BATTERY_CURRENT_ZERO = 2.5605;
+const float BATTERY_CURRENT_SENSITIVITY = 0.066;
+const float BATTERY_RATED_CAPACITY_AH = 2.0;
+const float BATTERY_FULL_VOLTAGE = 12.55;
+const float BATTERY_EMPTY_VOLTAGE = 9.0;
+const float BATTERY_CURRENT_DEADBAND = 0.05;
+
 // ============================================================
 // TREND SETTINGS
 // ============================================================
@@ -144,6 +153,17 @@ unsigned long lastSendTime = 0;
 
 float baseCurrent = 0;
 float previousCurrent = 0;
+
+float batteryCurrent = 0.0;
+float batterySOC = 100.0;
+float batterySOH = 100.0;
+float batteryUsedAh = 0.0;
+float measuredCapacityAh = BATTERY_RATED_CAPACITY_AH;
+bool batteryCycleActive = false;
+unsigned long lastBatteryIntegrationTime = 0;
+unsigned long lastBatterySaveTime = 0;
+
+Preferences batteryPreferences;
 float previousTemperature = 0;
 
 float speed = 0.0;
@@ -493,6 +513,305 @@ void ultrasonicSafetyTask(void *parameter) {
         vTaskDelay(
             pdMS_TO_TICKS(5)
         );
+    }
+}
+
+// ============================================================
+// BATTERY HEALTH MONITORING
+// ============================================================
+
+float readBatteryCurrent() {
+
+    double sum = 0;
+
+    const int samples = 200;
+
+    for (
+        int i = 0;
+        i < samples;
+        i++
+    ) {
+
+        sum +=
+            analogReadMilliVolts(
+                BATTERY_CURRENT_PIN
+            );
+
+        delayMicroseconds(
+            100
+        );
+    }
+
+    float sensorVoltage =
+        (sum / samples) /
+        1000.0;
+
+    float current =
+        (
+            sensorVoltage -
+            BATTERY_CURRENT_ZERO
+        ) /
+        BATTERY_CURRENT_SENSITIVITY;
+
+    return current;
+}
+
+void loadBatteryHealthData() {
+
+    batteryPreferences.begin(
+        "battery",
+        true
+    );
+
+    measuredCapacityAh =
+        batteryPreferences.getFloat(
+            "capacity",
+            BATTERY_RATED_CAPACITY_AH
+        );
+
+    batterySOH =
+        batteryPreferences.getFloat(
+            "soh",
+            100.0
+        );
+
+    batterySOC =
+        batteryPreferences.getFloat(
+            "soc",
+            100.0
+        );
+
+    batteryUsedAh =
+        batteryPreferences.getFloat(
+            "usedAh",
+            0.0
+        );
+
+    batteryCycleActive =
+        batteryPreferences.getBool(
+            "cycle",
+            false
+        );
+
+    batteryPreferences.end();
+
+    measuredCapacityAh =
+        constrain(
+            measuredCapacityAh,
+            0.1,
+            BATTERY_RATED_CAPACITY_AH
+        );
+
+    batterySOH =
+        constrain(
+            batterySOH,
+            0.0,
+            100.0
+        );
+
+    batterySOC =
+        constrain(
+            batterySOC,
+            0.0,
+            100.0
+        );
+}
+
+void saveBatteryHealthData() {
+
+    batteryPreferences.begin(
+        "battery",
+        false
+    );
+
+    batteryPreferences.putFloat(
+        "capacity",
+        measuredCapacityAh
+    );
+
+    batteryPreferences.putFloat(
+        "soh",
+        batterySOH
+    );
+
+    batteryPreferences.putFloat(
+        "soc",
+        batterySOC
+    );
+
+    batteryPreferences.putFloat(
+        "usedAh",
+        batteryUsedAh
+    );
+
+    batteryPreferences.putBool(
+        "cycle",
+        batteryCycleActive
+    );
+
+    batteryPreferences.end();
+}
+
+void updateBatteryHealth(
+    float voltage,
+    float current
+) {
+
+    unsigned long now =
+        millis();
+
+    if (
+        lastBatteryIntegrationTime == 0
+    ) {
+
+        lastBatteryIntegrationTime =
+            now;
+
+        return;
+    }
+
+    float elapsedHours =
+        (
+            now -
+            lastBatteryIntegrationTime
+        ) /
+        3600000.0;
+
+    lastBatteryIntegrationTime =
+        now;
+
+    if (
+        elapsedHours <= 0.0 ||
+        elapsedHours > 0.1
+    ) {
+
+        return;
+    }
+
+    if (
+        !batteryCycleActive &&
+        voltage >= BATTERY_FULL_VOLTAGE &&
+        fabs(current) <= BATTERY_CURRENT_DEADBAND
+    ) {
+
+        batteryCycleActive =
+            true;
+
+        batteryUsedAh =
+            0.0;
+
+        batterySOC =
+            100.0;
+
+        Serial.println(
+            "Battery capacity measurement STARTED"
+        );
+    }
+
+    if (
+        batteryCycleActive &&
+        current > BATTERY_CURRENT_DEADBAND
+    ) {
+
+        batteryUsedAh +=
+            current *
+            elapsedHours;
+
+        batterySOC =
+            100.0 -
+            (
+                batteryUsedAh /
+                measuredCapacityAh
+            ) *
+            100.0;
+
+        batterySOC =
+            constrain(
+                batterySOC,
+                0.0,
+                100.0
+            );
+    }
+
+    if (
+        batteryCycleActive &&
+        voltage <= BATTERY_EMPTY_VOLTAGE &&
+        batteryUsedAh > 0.2
+    ) {
+
+        measuredCapacityAh =
+            batteryUsedAh;
+
+        batterySOH =
+            (
+                measuredCapacityAh /
+                BATTERY_RATED_CAPACITY_AH
+            ) *
+            100.0;
+
+        batterySOH =
+            constrain(
+                batterySOH,
+                0.0,
+                100.0
+            );
+
+        batterySOC =
+            0.0;
+
+        batteryCycleActive =
+            false;
+
+        Serial.println(
+            "Battery capacity measurement COMPLETE"
+        );
+
+        Serial.print(
+            "Measured Capacity : "
+        );
+
+        Serial.print(
+            measuredCapacityAh,
+            3
+        );
+
+        Serial.println(
+            " Ah"
+        );
+
+        Serial.print(
+            "Battery SOH : "
+        );
+
+        Serial.print(
+            batterySOH,
+            1
+        );
+
+        Serial.println(
+            " %"
+        );
+    }
+
+    if (
+        voltage >= BATTERY_FULL_VOLTAGE &&
+        fabs(current) <= BATTERY_CURRENT_DEADBAND
+    ) {
+
+        batterySOC =
+            100.0;
+    }
+
+    if (
+        now -
+        lastBatterySaveTime >=
+        60000
+    ) {
+
+        lastBatterySaveTime =
+            now;
+
+        saveBatteryHealthData();
     }
 }
 
@@ -1001,7 +1320,11 @@ void sendDataToRender(
     String temperatureTrend,
     String loadStatus,
     String motorStatus,
-    float currentSpeed
+    float currentSpeed,
+    float batterySOH,
+    float batterySOC,
+    float batteryCapacityAh,
+    float batteryCurrent
 ) {
 
     if (
@@ -1087,6 +1410,30 @@ void sendDataToRender(
             1
         ) +
 
+        ",\"battery_health\":" +
+        String(
+            batterySOH,
+            1
+        ) +
+
+        ",\"battery_soc\":" +
+        String(
+            batterySOC,
+            1
+        ) +
+
+        ",\"battery_capacity_ah\":" +
+        String(
+            batteryCapacityAh,
+            3
+        ) +
+
+        ",\"battery_current\":" +
+        String(
+            batteryCurrent,
+            3
+        ) +
+
         "}";
 
     Serial.println();
@@ -1155,6 +1502,11 @@ void setup() {
 
     analogSetPinAttenuation(
         CURRENT_PIN,
+        ADC_11db
+    );
+
+    analogSetPinAttenuation(
+        BATTERY_CURRENT_PIN,
         ADC_11db
     );
 
@@ -1276,6 +1628,12 @@ void setup() {
             "OLED initialization failed!"
         );
     }
+
+    // ========================================================
+    // BATTERY HEALTH MEMORY
+    // ========================================================
+
+    loadBatteryHealthData();
 
     // ========================================================
     // DS18B20
@@ -1506,6 +1864,14 @@ void loop() {
 
     float batteryVoltage =
         readVoltage();
+
+    batteryCurrent =
+        readBatteryCurrent();
+
+    updateBatteryHealth(
+        batteryVoltage,
+        batteryCurrent
+    );
 
     float temperature =
         readTemperature();
@@ -2101,7 +2467,11 @@ void loop() {
             temperatureTrend,
             loadStatus,
             motorStatus,
-            speed
+            speed,
+            batterySOH,
+            batterySOC,
+            measuredCapacityAh,
+            batteryCurrent
         );
     }
 
