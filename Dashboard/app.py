@@ -312,7 +312,7 @@ html,body,[data-testid="stAppViewContainer"] {{
 }}
 .bottom {{
     display:grid;
-    grid-template-columns:16% 24% 30% 24% 6%;
+    grid-template-columns:12% 38% 38% 12%;
     align-items:center;
     min-height:73px;
     border-top:1px solid rgba(160,185,205,.30);
@@ -432,10 +432,6 @@ html,body,[data-testid="stAppViewContainer"] {{
         <div class="bottom-item">
             <span class="bottom-label">RANGE</span>
             <span class="bottom-value">{range_km} <span style="font-size:20px">km</span></span>
-        </div>
-        <div class="bottom-item">
-            <span class="bottom-label">BATTERY HEALTH</span>
-            <span class="bottom-value health">{f"{float(battery_health):.0f} %" if battery_health is not None else "-- %"}</span>
         </div>
         <div class="bottom-item" style="border-right:none">
             <img class="warning-icon" src="{warning_icon}">
