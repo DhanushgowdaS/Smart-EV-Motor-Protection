@@ -349,7 +349,7 @@ with center:
     min_speed = 0
     max_speed = 100
 
-    # Semi-circular automotive digital speedometer
+    # Reference-style automotive digital speedometer
     start_angle = 180
     end_angle = 0
 
@@ -361,8 +361,8 @@ with center:
         radians = math.radians(angle)
         return radius * math.cos(radians), radius * math.sin(radians)
 
-    def create_arc_segment(start_value, end_value, color, width=18):
-        points = 100
+    def create_arc_segment(start_value, end_value, color, width):
+        points = 120
         x_values = []
         y_values = []
 
@@ -389,60 +389,74 @@ with center:
 
     speedometer = go.Figure()
 
-    # Subtle dark semicircular bezel behind the colored scale
+    # Black automotive gauge face
+    speedometer.add_shape(
+        type="rect",
+        x0=-1.2,
+        x1=1.2,
+        y0=-0.58,
+        y1=1.18,
+        line={"width": 0},
+        fillcolor="#000000",
+        layer="below"
+    )
+
+    # Thick grey outer bezel
     speedometer.add_trace(
         create_arc_segment(
             0,
             100,
-            "#4A4F54",
-            26
+            "#424242",
+            25
         )
     )
 
-    # Main semi-circular colored scale
+    # Green safe zone
     speedometer.add_trace(
         create_arc_segment(
             0,
             40,
-            "#39D900",
+            "#59D900",
             20
         )
     )
 
+    # Grey normal zone
     speedometer.add_trace(
         create_arc_segment(
             40,
             85,
-            "#4A555F",
+            "#424242",
             20
         )
     )
 
+    # Red high-speed zone
     speedometer.add_trace(
         create_arc_segment(
             85,
             100,
-            "#E60000",
+            "#FF0000",
             20
         )
     )
 
-    # Fine automotive tick marks
+    # Fine and major automotive tick marks
     for value in range(0, 101, 2):
         angle = speed_to_angle(value)
 
         if value % 20 == 0:
-            tick_outer = 1.14
-            tick_inner = 1.01
-            tick_width = 4
+            tick_outer = 1.00
+            tick_inner = 0.84
+            tick_width = 3.0
         elif value % 10 == 0:
-            tick_outer = 1.13
-            tick_inner = 1.04
-            tick_width = 3
+            tick_outer = 1.00
+            tick_inner = 0.89
+            tick_width = 2.0
         else:
-            tick_outer = 1.12
-            tick_inner = 1.065
-            tick_width = 1.8
+            tick_outer = 1.00
+            tick_inner = 0.93
+            tick_width = 1.4
 
         x1, y1 = polar_to_xy(tick_outer, angle)
         x2, y2 = polar_to_xy(tick_inner, angle)
@@ -453,7 +467,7 @@ with center:
                 y=[y1, y2],
                 mode="lines",
                 line={
-                    "color": "#F2F4F5",
+                    "color": "#F2F2F2",
                     "width": tick_width
                 },
                 hoverinfo="skip",
@@ -461,10 +475,10 @@ with center:
             )
         )
 
-    # Main numeric scale
+    # Labels inside the arc
     for value in range(0, 101, 20):
         angle = speed_to_angle(value)
-        x, y = polar_to_xy(1.31, angle)
+        x, y = polar_to_xy(0.73, angle)
 
         speedometer.add_annotation(
             x=x,
@@ -473,29 +487,29 @@ with center:
             showarrow=False,
             font={
                 "size": 18,
-                "color": "#E8ECEF",
+                "color": "#F2F2F2",
                 "family": "Arial"
             },
             xanchor="center",
             yanchor="middle"
         )
 
-    # Large cyan digital speed readout
+    # Large blue digital speed
     speedometer.add_annotation(
         x=-0.02,
-        y=-0.02,
+        y=-0.08,
         text=f"{speed:.0f}",
         showarrow=False,
         font={
             "size": 82,
-            "color": "#20BFFF",
+            "color": "#178EDA",
             "family": "Arial"
         },
         xanchor="center",
         yanchor="middle"
     )
 
-    # Unit positioned to the lower-right like the reference
+    # km/hr at the lower-right of the speed
     speedometer.add_annotation(
         x=0.30,
         y=-0.18,
@@ -503,32 +517,47 @@ with center:
         showarrow=False,
         font={
             "size": 21,
-            "color": "#16BFFF",
+            "color": "#178EDA",
             "family": "Arial"
         },
         xanchor="left",
         yanchor="middle"
     )
 
+    # Odometer inside the gauge
+    speedometer.add_annotation(
+        x=0,
+        y=-0.43,
+        text="1 3 9 4 9 km",
+        showarrow=False,
+        font={
+            "size": 18,
+            "color": "#E6E6E6",
+            "family": "Courier New"
+        },
+        xanchor="center",
+        yanchor="middle"
+    )
+
     speedometer.update_layout(
-        height=430,
+        height=390,
         margin={
-            "l": 10,
-            "r": 10,
-            "t": 10,
+            "l": 0,
+            "r": 0,
+            "t": 0,
             "b": 0
         },
         paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="#000000",
         showlegend=False,
         xaxis={
             "visible": False,
-            "range": [-1.42, 1.42],
+            "range": [-1.16, 1.16],
             "fixedrange": True
         },
         yaxis={
             "visible": False,
-            "range": [-0.62, 1.38],
+            "range": [-0.58, 1.18],
             "fixedrange": True,
             "scaleanchor": "x",
             "scaleratio": 1
