@@ -389,54 +389,13 @@ with center:
 
     speedometer = go.Figure()
 
-    # Main dark instrument face
-    face_points = 160
-    face_x = []
-    face_y = []
-
-    for i in range(face_points + 1):
-        angle = 360 * i / face_points
-        x, y = polar_to_xy(1.05, angle)
-        face_x.append(x)
-        face_y.append(y)
-
+    # Subtle dark semicircular bezel behind the colored scale
     speedometer.add_trace(
-        go.Scatter(
-            x=face_x,
-            y=face_y,
-            mode="lines",
-            fill="toself",
-            fillcolor="#03080D",
-            line={
-                "color": "#111A22",
-                "width": 2
-            },
-            hoverinfo="skip",
-            showlegend=False
-        )
-    )
-
-    # Thin outer automotive bezel
-    bezel_x = []
-    bezel_y = []
-
-    for i in range(face_points + 1):
-        angle = 360 * i / face_points
-        x, y = polar_to_xy(1.10, angle)
-        bezel_x.append(x)
-        bezel_y.append(y)
-
-    speedometer.add_trace(
-        go.Scatter(
-            x=bezel_x,
-            y=bezel_y,
-            mode="lines",
-            line={
-                "color": "#4A4F54",
-                "width": 5
-            },
-            hoverinfo="skip",
-            showlegend=False
+        create_arc_segment(
+            0,
+            100,
+            "#4A4F54",
+            26
         )
     )
 
@@ -538,8 +497,8 @@ with center:
 
     # Unit positioned to the lower-right like the reference
     speedometer.add_annotation(
-        x=0.37,
-        y=-0.20,
+        x=0.30,
+        y=-0.18,
         text="km/hr",
         showarrow=False,
         font={
@@ -548,27 +507,6 @@ with center:
             "family": "Arial"
         },
         xanchor="left",
-        yanchor="middle"
-    )
-
-    # Small odometer window under the digital speed
-    odo_text = f"{odo} km"
-
-    speedometer.add_annotation(
-        x=0,
-        y=-0.48,
-        text=odo_text,
-        showarrow=False,
-        font={
-            "size": 16,
-            "color": "#E8E8E8",
-            "family": "Courier New"
-        },
-        bgcolor="#101214",
-        bordercolor="#22262A",
-        borderwidth=1,
-        borderpad=4,
-        xanchor="center",
         yanchor="middle"
     )
 
