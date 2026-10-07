@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import base64
@@ -142,8 +143,7 @@ current_pct = max(0.0, min(current / 30.0, 1.0))
 temp_marker = temp_pct * 100
 current_marker = current_pct * 100
 
-st.markdown(
-    f"""
+dashboard_html = f"""
 <style>
 html,body,[data-testid="stAppViewContainer"] {{
     background:#020B10 !important;
@@ -440,9 +440,9 @@ html,body,[data-testid="stAppViewContainer"] {{
 
     <div class="caption">Last updated: {now.strftime("%d-%m-%Y")} {current_time}</div>
 </div>
-""",
-    unsafe_allow_html=True
-)
+"""
+
+components.html(dashboard_html, height=760, scrolling=False)
 
 time.sleep(0.7)
 st.rerun()
