@@ -43,6 +43,7 @@ else:
     system_on = bool(data.get("system", False))
     system_status = data.get("status", "NORMAL")
     speed = float(data.get("speed", 0.0))
+    battery_health = data.get("battery_health", None)
 
     speed = max(0.0, min(speed, 100.0))
 
@@ -743,9 +744,24 @@ with right:
 
 st.divider()
 
-empty_left, empty_middle, odo_col, range_col = st.columns(
+battery_col, empty_middle, odo_col, range_col = st.columns(
     [2.5, 1.5, 3, 3]
 )
+
+with battery_col:
+
+    st.markdown(
+        "## 🔋 BATTERY HEALTH"
+    )
+
+    if battery_health is None:
+        battery_health_text = "-- %"
+    else:
+        battery_health_text = f"{float(battery_health):.0f} %"
+
+    st.markdown(
+        f"# {battery_health_text}"
+    )
 
 with odo_col:
 
