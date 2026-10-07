@@ -117,7 +117,7 @@ def gauge_figure(value):
             font={"size": 20, "color": "#F4F7FA"}
         )
 
-    a = angle(value if False else speed)
+    a = angle(speed)
     x1, y1 = xy(1.0, a)
     x2, y2 = xy(0.72, a)
     fig.add_trace(go.Scatter(
