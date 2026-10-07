@@ -337,11 +337,8 @@ void ultrasonicSafetyTask(void *parameter) {
 
         if (accidentDetected) {
 
-            // Keep motor OFF
-            emergencyMotorStop();
-
-            // Accident lock is NOT cleared here.
-            // Only ESP32 restart clears it.
+            // Accident ramp is handled in the main loop.
+            // Do not stop the motor here.
 
             vTaskDelay(
                 pdMS_TO_TICKS(5)
@@ -439,7 +436,7 @@ void ultrasonicSafetyTask(void *parameter) {
 
             accidentDetected = true;
 
-            emergencyMotorStop();
+            startAccidentMotorRamp();
 
             Serial.println();
             Serial.println(
