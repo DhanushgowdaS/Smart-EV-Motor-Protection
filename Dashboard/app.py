@@ -124,6 +124,13 @@ st.markdown(
             margin-top: 10px;
         }
 
+        .battery-health-title {
+            font-size: 25px;
+            font-weight: 800;
+            color: #F5F5F5;
+            white-space: nowrap;
+        }
+
         .big-value {
             font-size: 38px;
             font-weight: 800;
@@ -751,7 +758,8 @@ battery_col, empty_middle, odo_col, range_col = st.columns(
 with battery_col:
 
     st.markdown(
-        "## 🔋 BATTERY HEALTH"
+        '<div class="battery-health-title">🔋 BATTERY HEALTH</div>',
+        unsafe_allow_html=True
     )
 
     if battery_health is None:
