@@ -152,6 +152,61 @@ st.markdown(
             margin-top: 10px;
         }
 
+        .odo-card {
+            margin-top: 4px;
+            padding: 12px 14px 10px;
+            border-radius: 12px;
+            background: linear-gradient(145deg, rgba(12, 18, 28, 0.96), rgba(2, 7, 11, 0.98));
+            border: 1px solid rgba(145, 0, 255, 0.35);
+            box-shadow: 0 0 18px rgba(125, 0, 255, 0.14), inset 0 0 18px rgba(0, 180, 255, 0.04);
+        }
+
+        .odo-label {
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: #BFC8D4;
+            margin-bottom: 7px;
+        }
+
+        .odo-window {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 7px 8px;
+            border-radius: 7px;
+            background: #010306;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.9), 0 0 10px rgba(125, 0, 255, 0.08);
+        }
+
+        .odo-digit {
+            min-width: 30px;
+            padding: 2px 3px;
+            text-align: center;
+            font-family: "Courier New", monospace;
+            font-size: 31px;
+            line-height: 1;
+            font-weight: 800;
+            color: #F4F7FF;
+            background: linear-gradient(180deg, #101721, #05080D);
+            border-right: 1px solid rgba(255, 255, 255, 0.07);
+            text-shadow: 0 0 7px rgba(120, 180, 255, 0.28);
+        }
+
+        .odo-digit:last-child {
+            border-right: none;
+        }
+
+        .odo-unit {
+            margin-left: 8px;
+            font-size: 17px;
+            font-weight: 800;
+            color: #DCE4EF;
+            letter-spacing: 1px;
+        }
+
         .battery-health-title {
             font-size: 25px;
             font-weight: 800;
@@ -801,12 +856,18 @@ with battery_col:
 
 with odo_col:
 
-    st.markdown(
-        "## 💡 ODO"
-    )
+    odo_value = max(0, int(odo))
+    odo_digits = f"{odo_value:06d}"[-6:]
 
     st.markdown(
-        f"# {odo} km"
+        f"""<div class="odo-card">
+            <div class="odo-label">ODO</div>
+            <div class="odo-window">
+                {"".join(f'<span class="odo-digit">{digit}</span>' for digit in odo_digits)}
+                <span class="odo-unit">KM</span>
+            </div>
+        </div>""",
+        unsafe_allow_html=True
     )
 
 with range_col:
