@@ -62,6 +62,71 @@ st.markdown(
 
         .stApp {
             background-color: #02070B;
+            background-image:
+                radial-gradient(circle at 15% 20%, rgba(20,121,232,0.10) 0%, transparent 28%),
+                radial-gradient(circle at 85% 75%, rgba(73,230,0,0.07) 0%, transparent 30%),
+                linear-gradient(rgba(20,121,232,0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(20,121,232,0.035) 1px, transparent 1px);
+            background-size: auto, auto, 55px 55px, 55px 55px;
+            animation: backgroundMove 18s linear infinite;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stApp::before {
+            content: "";
+            position: fixed;
+            inset: -30%;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 30% 35%, rgba(20,121,232,0.13), transparent 18%),
+                radial-gradient(circle at 70% 65%, rgba(73,230,0,0.08), transparent 16%);
+            filter: blur(35px);
+            animation: glowMove 12s ease-in-out infinite alternate;
+            z-index: 0;
+        }
+
+        .stApp::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(115deg, transparent 0%, rgba(255,255,255,0.025) 45%, transparent 55%);
+            background-size: 220% 100%;
+            animation: scanMove 8s linear infinite;
+            z-index: 0;
+        }
+
+        .block-container {
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes backgroundMove {
+            from {
+                background-position: 0 0, 0 0, 0 0, 0 0;
+            }
+            to {
+                background-position: 0 0, 0 0, 55px 55px, 55px 55px;
+            }
+        }
+
+        @keyframes glowMove {
+            0% {
+                transform: translate3d(-3%, -2%, 0) scale(1);
+            }
+            100% {
+                transform: translate3d(3%, 2%, 0) scale(1.08);
+            }
+        }
+
+        @keyframes scanMove {
+            from {
+                background-position: 120% 0;
+            }
+            to {
+                background-position: -120% 0;
+            }
         }
 
         [data-testid="stHeader"] {
